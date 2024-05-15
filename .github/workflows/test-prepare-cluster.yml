@@ -32,12 +32,11 @@ jobs:
 
       - name: build
         run: |
-          set -e
-          make package-create-release
-          make package-create-customer
-          make package-create-cluster
-          make package-helm-install
-          make package-kots-install
+          make package-create-release \
+            package-create-customer \
+            package-create-cluster \
+            package-helm-install \
+            package-kots-install
 
       - name: pull helm chart
         run: |

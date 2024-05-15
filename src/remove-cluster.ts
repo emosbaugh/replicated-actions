@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import { VendorPortalApi, removeCluster } from 'replicated-lib';
 
 
-async function run() {
+export async function actionRemoveCluster() {
   try {
     const apiToken = core.getInput('api-token')
     const clusterId = core.getInput('cluster-id');
@@ -21,6 +21,3 @@ async function run() {
     core.setFailed(error.message);
   }
 }
-
-
-run()

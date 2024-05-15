@@ -9,5 +9,7 @@ inputs:
     description: "Cluster id to remove."
     required: true
 runs:
-  using: "node20"
-  main: "dist/index.js"
+  using: "composite"
+  steps:
+    - run: node dist/index.js remove-cluster
+      shell: bash

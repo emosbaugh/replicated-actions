@@ -1,8 +1,14 @@
 .PHONY: package-all
-package-all: package-archive-channel package-archive-customer package-create-cluster package-create-object-store \
+package-all: package-main \
+			 package-archive-channel package-archive-customer package-create-cluster package-create-object-store \
 			 package-create-postgres package-expose-port package-create-customer package-create-release \
 			 package-helm-install package-kots-install package-promote-release package-remove-cluster \
 			 package-get-customer-instances package-report-compatibility-result package-upgrade-cluster
+
+.PHONY: package-main
+package-main:
+	rm -rf ./build ./dist ./node_modules
+	npm install && npm run build && npm run package
 
 .PHONY: package-archive-channel
 package-archive-channel:
@@ -62,7 +68,7 @@ package-promote-release:
 .PHONY: package-remove-cluster
 package-remove-cluster:
 	rm -rf ./remove-cluster/build ./remove-cluster/dist ./remove-cluster/node_modules
-	cd ./remove-cluster && npm install && npm run build && npm run package
+	cp -r dist remove-cluster/
 
 .PHONY: package-get-customer-instances
 package-get-customer-instances:
