@@ -12,6 +12,8 @@ runs:
   using: "composite"
   steps:
     - run: |
+        echo "action=$action"
+        echo "ACTION=$ACTION"
         echo "action_repository=$action_repository"
         echo "ACTION_REPOSITORY=$ACTION_REPOSITORY"
       shell: bash
