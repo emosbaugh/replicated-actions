@@ -108,15 +108,15 @@ runs:
   steps:
   - name: 'Create Release'
     id: 'create-release'
-    uses: ./create-release
+    uses: replicatedhq/compatibility-actions/create-release@${{ env.action_ref }}
     with:
       app-slug: ${{ inputs.app-slug }}
       api-token: ${{ inputs.api-token }}
       yaml-dir: ${{ inputs.yaml-dir }}
-      chart: ${{ inputs.chart }} 
+      chart: ${{ inputs.chart }}
   - name: 'Create Customer'
     id: 'create-customer'
-    uses: ./create-customer
+    uses: replicatedhq/compatibility-actions/create-customer@${{ env.action_ref }}
     with:
       app-slug: ${{ inputs.app-slug }}
       api-token: ${{ inputs.api-token }}
@@ -127,7 +127,7 @@ runs:
       channel-slug: ${{ steps.create-release.outputs.channel-slug }}
   - name: Create Cluster
     id: create-cluster
-    uses: ./create-cluster
+    uses: replicatedhq/compatibility-actions/create-cluster@${{ env.action_ref }}
     with:
       api-token: ${{ inputs.api-token }}
       kubernetes-distribution: ${{ inputs.kubernetes-distribution }}
@@ -145,7 +145,7 @@ runs:
       kubeconfig-path: ${{ inputs.kubeconfig-path || '' }}
       export-kubeconfig: ${{ inputs.export-kubeconfig || false }}
   - name: Deploy the app with Helm
-    uses: ./helm-install
+    uses: replicatedhq/compatibility-actions/helm-install@${{ env.action_ref }}
     if: ${{ inputs.chart != '' }}
     with:
       kubeconfig: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
@@ -159,7 +159,7 @@ runs:
       run-preflights: ${{ inputs.helm-run-preflights }}
   - name: Deploy the app with KOTS
     if: ${{ inputs.yaml-dir != '' }}
-    uses: ./kots-install 
+    uses: replicatedhq/compatibility-actions/kots-install@${{ env.action_ref }} 
     with:
       kubeconfig: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
       app-slug: ${{ inputs.app-slug }}/test-channel
