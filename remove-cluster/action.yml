@@ -11,5 +11,9 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - run: |
+        echo "action_repository=$action_repository"
+        echo "ACTION_REPOSITORY=$ACTION_REPOSITORY"
+      shell: bash
     - run: node dist/index.js remove-cluster
       shell: bash
