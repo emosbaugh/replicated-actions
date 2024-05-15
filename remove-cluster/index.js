@@ -1,3 +1,1 @@
-import { actionRemoveCluster } from './dist/index';
-
-actionRemoveCluster();
+require('./dist/index').actionRemoveCluster();
