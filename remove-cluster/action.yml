@@ -16,7 +16,7 @@ runs:
         echo "ACTION=$ACTION"
         echo "action_repository=$action_repository"
         echo "ACTION_REPOSITORY=$ACTION_REPOSITORY"
-        echo ${{ github }}
+        echo ${{ github.action_path }} ${{ github.action_repository }}
       shell: bash
     - run: node dist/index.js remove-cluster
       shell: bash
