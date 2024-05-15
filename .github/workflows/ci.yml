@@ -24,4 +24,8 @@ jobs:
         run: make readme-all
 
       - name: fail if files changed
-        run: git diff --quiet --exit-code
+        run: |
+          if ! git diff --quiet --exit-code ; then
+            echo "Please run 'make package-all' and 'make readme-all' locally and commit the changes."
+            exit 1
+          fi
