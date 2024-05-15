@@ -9,14 +9,5 @@ inputs:
     description: "Cluster id to remove."
     required: true
 runs:
-  using: "composite"
-  steps:
-    - run: |
-        echo "action=$action"
-        echo "ACTION=$ACTION"
-        echo "action_repository=$action_repository"
-        echo "ACTION_REPOSITORY=$ACTION_REPOSITORY"
-        echo ${{ github.action_path }} ${{ github.action_repository }}
-      shell: bash
-    - run: node dist/index.js remove-cluster
-      shell: bash
+  using: "node20"
+  main: "dist/index.js"

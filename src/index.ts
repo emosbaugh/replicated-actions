@@ -1,13 +1,7 @@
-import yargs from "yargs";
-import {actionRemoveCluster} from "./remove-cluster";
+import * as github from '@actions/github';
 
-async function main() {
-  await yargs(process.argv.slice(2))
-    .command('remove-cluster', "Remove cluster action", async () => {
-        await actionRemoveCluster();
-    })
-    .demandCommand(1)
-    .argv;
+function main() {
+  console.log(github.context.action)
 }
 
 main();
