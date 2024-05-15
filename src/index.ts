@@ -1,7 +1,3 @@
-import * as github from '@actions/github';
+import { actionRemoveCluster } from "./remove-cluster";
 
-function main() {
-  console.log(github.context.action)
-}
-
-main();
+exports.actionRemoveCluster = actionRemoveCluster;
