@@ -17,5 +17,5 @@ runs:
       run: |
         node ${{ github.action_path }}/index.js remove-cluster
       env:
-        INPUT_api-token: "${{ inputs.api-token }}"
-        INPUT_cluster-id: "${{ inputs.cluster-id }}"
+        INPUT_API_TOKEN: "${{ inputs.api-token }}"
+        INPUT_CLUSTER_ID: "${{ inputs.cluster-id }}"
