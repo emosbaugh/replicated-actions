@@ -46,9 +46,9 @@ package-expose-port:
 	cd ./expose-port && npm install && npm run build && npm run package
 
 .PHONY: package-create-customer
-package-create-customer:
-	rm -rf ./create-customer/build ./create-customer/dist ./create-customer/node_modules
-	cd ./create-customer && npm install && npm run build && npm run package
+package-create-customer: package-main
+	rm -rf ./create-customer/dist
+	cp -r dist create-customer/
 
 .PHONY: package-create-release
 package-create-release: package-main

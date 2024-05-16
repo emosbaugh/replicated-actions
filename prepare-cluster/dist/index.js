@@ -109,6 +109,70 @@ function processNodeGroups(nodeGroups) {
 
 /***/ }),
 
+/***/ 77587:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.actionCreateCustomer = void 0;
+const core = __nccwpck_require__(42186);
+const replicated_lib_1 = __nccwpck_require__(34409);
+const yaml_1 = __nccwpck_require__(44083);
+function actionCreateCustomer() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const appSlug = core.getInput('app-slug');
+            const apiToken = core.getInput('api-token');
+            const name = core.getInput('customer-name');
+            const email = core.getInput('customer-email');
+            const licenseType = core.getInput('license-type');
+            const channelSlug = core.getInput('channel-slug');
+            const apiEndpoint = core.getInput('replicated-api-endpoint');
+            const expiresInDays = +(core.getInput('expires-in') || 0);
+            const entitlements = core.getInput('entitlements');
+            const isKotsInstallEnabled = core.getBooleanInput('is-kots-install-enabled');
+            const apiClient = new replicated_lib_1.VendorPortalApi();
+            apiClient.apiToken = apiToken;
+            if (apiEndpoint) {
+                apiClient.endpoint = apiEndpoint;
+            }
+            const entitlementsArray = processEntitlements(entitlements);
+            const customer = yield (0, replicated_lib_1.createCustomer)(apiClient, appSlug, name, email, licenseType, channelSlug, expiresInDays, entitlementsArray, isKotsInstallEnabled);
+            core.setOutput('customer-id', customer.customerId);
+            core.setOutput('license-id', customer.licenseId);
+            core.setOutput('license-file', customer.license);
+        }
+        catch (error) {
+            core.setFailed(error.message);
+        }
+    });
+}
+exports.actionCreateCustomer = actionCreateCustomer;
+function processEntitlements(entitlements) {
+    if (entitlements) {
+        const entitlementsYAML = (0, yaml_1.parse)(entitlements);
+        // for each entitlement in entitlementsYAML, convert to json and add to array
+        const entitlementsArray = entitlementsYAML.map((entitlement) => {
+            return { name: entitlement.name, value: entitlement.value };
+        });
+        return entitlementsArray;
+    }
+    return undefined;
+}
+//# sourceMappingURL=create-customer.js.map
+
+/***/ }),
+
 /***/ 9786:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -66882,9 +66946,11 @@ var exports = __webpack_exports__;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const create_cluster_1 = __nccwpck_require__(32139);
+const create_customer_1 = __nccwpck_require__(77587);
 const create_release_1 = __nccwpck_require__(9786);
 const remove_cluster_1 = __nccwpck_require__(40031);
 exports.actionCreateCluster = create_cluster_1.actionCreateCluster;
+exports.actionCreateCustomer = create_customer_1.actionCreateCustomer;
 exports.actionCreateRelease = create_release_1.actionCreateRelease;
 exports.actionRemoveCluster = remove_cluster_1.actionRemoveCluster;
 //# sourceMappingURL=index.js.map

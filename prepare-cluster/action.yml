@@ -104,34 +104,33 @@ outputs:
     description: 'Contains the kubeconfig to connect with the cluster.'
     value: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
 runs:
-  using: "composite"
+  using: composite
   steps:
-  - name: 'Create Release'
-    id: 'create-release'
+  - name: Create Release
+    id: create-release
     shell: bash
-    run: |
-      node ${{ github.action_path }}/create-release.js
-    with:
+    run: node ${{ github.action_path }}/create-release.js
+    env:
       INPUT_APP-SLUG: ${{ inputs.app-slug }}
       INPUT_API-TOKEN: ${{ inputs.api-token }}
       INPUT_YAML-DIR: ${{ inputs.yaml-dir }}
       INPUT_CHART: ${{ inputs.chart }}
-  # - name: 'Create Customer'
-  #   id: 'create-customer'
-  #   uses: replicatedhq/compatibility-actions/create-customer@${{ env.action_ref }}
-  #   with:
-  #     app-slug: ${{ inputs.app-slug }}
-  #     api-token: ${{ inputs.api-token }}
-  #     customer-name: ${{ github.ref_name }}-${{ inputs.kubernetes-distribution }}-${{ inputs.kubernetes-version }}
-  #     customer-email: ${{ github.ref_name }}@example.com
-  #     license-type: "test"
-  #     entitlements: ${{ inputs.customer-entitlements }}
-  #     channel-slug: ${{ steps.create-release.outputs.channel-slug }}
+  - name: Create Customer
+    id: create-customer
+    shell: bash
+    run: node ${{ github.action_path }}/create-customer.js
+    env:
+      INPUT_APP-SLUG: ${{ inputs.app-slug }}
+      INPUT_API-TOKEN: ${{ inputs.api-token }}
+      INPUT_CUSTOMER-NAME: ${{ github.ref_name }}-${{ inputs.kubernetes-distribution }}-${{ inputs.kubernetes-version }}
+      INPUT_CUSTOMER-EMAIL: ${{ github.ref_name }}@example.com
+      INPUT_LICENSE-TYPE: "test"
+      INPUT_ENTITLEMENTS: ${{ inputs.customer-entitlements }}
+      INPUT_CHANNEL-SLUG: ${{ steps.create-release.outputs.channel-slug }}
   - name: Create Cluster
     id: create-cluster
     shell: bash
-    run: |
-      node ${{ github.action_path }}/create-cluster.js
+    run: node ${{ github.action_path }}/create-cluster.js
     env:
       INPUT_API-TOKEN: "${{ inputs.api-token }}"
       INPUT_KUBERNETES-DISTRIBUTION: ${{ inputs.kubernetes-distribution }}
@@ -166,7 +165,7 @@ runs:
   #   uses: replicatedhq/compatibility-actions/kots-install@${{ env.action_ref }} 
   #   with:
   #     kubeconfig: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
-  #     app-slug: ${{ inputs.app-slug }}/test-channel
+  #     INPUT_APP-SLUG: ${{ inputs.app-slug }}/test-channel
   #     license-file: ${{ steps.create-customer.outputs.license-file }}
   #     app-version-label: release__${{ steps.create-release.outputs.release-sequence }}
   #     config-values: ${{ inputs.kots-config-values }}

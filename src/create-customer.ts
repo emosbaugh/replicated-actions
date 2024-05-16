@@ -3,7 +3,7 @@ import { VendorPortalApi, createCustomer } from 'replicated-lib';
 
 import { parse } from 'yaml'
 
-async function run() {
+export async function actionCreateCustomer() {
   try {
     const appSlug = core.getInput('app-slug');
     const apiToken = core.getInput('api-token')
@@ -47,5 +47,3 @@ function processEntitlements(entitlements: string): [] | undefined {
   }
   return undefined
 }
-
-run()
