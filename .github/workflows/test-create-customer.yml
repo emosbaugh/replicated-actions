@@ -39,3 +39,6 @@ jobs:
         with:
           api-token: ${{ secrets.REPLICATED_API_TOKEN }}
           app-slug: replicated-actions-ci # from the Replicated QA team
+          customer-name: "CI Test Customer - ${{ github.ref_name }} - ${{ github.sha }}"
+          customer-email: ${{ github.sha }}@example.com
+          license-type: test
