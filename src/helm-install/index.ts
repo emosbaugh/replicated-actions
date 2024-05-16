@@ -4,7 +4,7 @@ import { file } from 'tmp-promise';
 import * as fs from 'fs';
 import { downloadPreflight, runPreflight } from './preflight';
 
-async function run() {
+export async function actionHelmInstall() {
   const helmPath: string = core.getInput('helm-path');
   const kubeconfig: string = core.getInput('kubeconfig');
   const namespace: string = core.getInput('namespace');
@@ -45,6 +45,3 @@ async function run() {
 
   await installChart(helmPath, kubeconfig, chart, version, name, namespace, valuesFilePath);
 }
-
-run()
-

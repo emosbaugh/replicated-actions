@@ -148,19 +148,20 @@ runs:
       INPUT_TAGS: ${{ inputs.tags || '' }}
       INPUT_KUBECONFIG-PATH: ${{ inputs.kubeconfig-path || '' }}
       INPUT_EXPORT-KUBECONFIG: ${{ inputs.export-kubeconfig || false }}
-  # - name: Deploy the app with Helm
-  #   uses: replicatedhq/compatibility-actions/helm-install@${{ env.action_ref }}
-  #   if: ${{ inputs.chart != '' }}
-  #   with:
-  #     kubeconfig: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
-  #     helm-path: "helm"
-  #     registry-username: ${{ github.ref_name }}@example.com
-  #     registry-password: ${{ steps.create-customer.outputs.license-id }}
-  #     chart: oci://registry.replicated.com/${{ inputs.app-slug }}/release__${{ steps.create-release.outputs.release-sequence }}/${{ inputs.helm-chart-name }}
-  #     name: ${{ inputs.app-slug }}
-  #     namespace: 'default'
-  #     values: ${{ inputs.helm-values }}
-  #     run-preflights: ${{ inputs.helm-run-preflights }}
+  - name: Deploy the app with Helm
+    if: ${{ inputs.chart != '' }}
+    shell: bash
+    run: node ${{ github.action_path }}/helm-install.js
+    env:
+      kubeconfig: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
+      helm-path: "helm"
+      registry-username: ${{ github.ref_name }}@example.com
+      registry-password: ${{ steps.create-customer.outputs.license-id }}
+      chart: oci://registry.replicated.com/${{ inputs.app-slug }}/release__${{ steps.create-release.outputs.release-sequence }}/${{ inputs.helm-chart-name }}
+      name: ${{ inputs.app-slug }}
+      namespace: 'default'
+      values: ${{ inputs.helm-values }}
+      run-preflights: ${{ inputs.helm-run-preflights }}
   # - name: Deploy the app with KOTS
   #   if: ${{ inputs.yaml-dir != '' }}
   #   uses: replicatedhq/compatibility-actions/kots-install@${{ env.action_ref }} 

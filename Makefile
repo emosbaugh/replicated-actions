@@ -61,9 +61,9 @@ package-create-release: package-main
 	cp -r dist create-release/
 
 .PHONY: package-helm-install
-package-helm-install:
-	rm -rf ./helm-install/build ./helm-install/dist ./helm-install/node_modules
-	@$(MAKE) -C helm-install package
+package-helm-install: package-main
+	rm -rf ./helm-install/dist
+	cp -r dist helm-install/
 
 .PHONY: package-kots-install
 package-kots-install:

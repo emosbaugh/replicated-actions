@@ -40,5 +40,3 @@ jobs:
           api-token: ${{ secrets.REPLICATED_API_TOKEN }}
           app-slug: replicated-actions-ci # from the Replicated QA team
           chart: wordpress-${{ env.WORDPRESS_CHART_VERSION }}.tgz
-          helm-chart-name: wordpress
-          helm-run-preflights: false
