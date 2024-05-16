@@ -9,5 +9,13 @@ inputs:
     description: "Cluster id to remove."
     required: true
 runs:
-  using: "node20"
-  main: "index.js"
+  using: composite
+  steps:
+    - name: "Remove cluster"
+      id: "remove-cluster"
+      shell: bash
+      run: |
+        node index.js remove-cluster
+      env:
+        INPUT_api-token: "${{ inputs.api-token }}"
+        INPUT_cluster-id: "${{ inputs.cluster-id }}"
