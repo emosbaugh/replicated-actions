@@ -1,14 +1,14 @@
-name: test - remove-cluster
+name: test - create-cluster
 
 on:
   pull_request:
     branches:
       - main
     paths:
-      - remove-cluster/**
+      - create-cluster/**
 
 concurrency:
-  group: test-remove-cluster-${{ github.head_ref }}
+  group: test-create-cluster-${{ github.head_ref }}
   cancel-in-progress: true
 
 jobs:
@@ -25,21 +25,15 @@ jobs:
             **/package-lock.json
 
       - name: build
-        run: make package-remove-cluster
+        run: make package-create-cluster
 
-      - name: create cluster
+      - name: test create-cluster
         id: create-cluster
-        uses: replicatedhq/compatibility-actions/create-cluster@v1
+        uses: ./create-cluster
         with:
           api-token: ${{ secrets.REPLICATED_API_TOKEN }}
           kubernetes-distribution: kind
           timeout-minutes: 5
-
-      - name: test remove-cluster
-        uses: ./remove-cluster
-        with:
-          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
-          cluster-id: ${{ steps.create-cluster.outputs.cluster-id }}
 
       - name: remove cluster
         if: always()

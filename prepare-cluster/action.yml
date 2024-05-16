@@ -127,23 +127,25 @@ runs:
   #     channel-slug: ${{ steps.create-release.outputs.channel-slug }}
   - name: Create Cluster
     id: create-cluster
-    uses: replicatedhq/compatibility-actions/create-cluster@${{ env.action_ref }}
-    with:
-      api-token: ${{ inputs.api-token }}
-      kubernetes-distribution: ${{ inputs.kubernetes-distribution }}
-      kubernetes-version: ${{ inputs.kubernetes-version }}
-      cluster-name: ${{ inputs.cluster-name || format('{0}-{1}-{2}', github.ref_name, inputs.kubernetes-distribution, inputs.kubernetes-version) }}
-      ttl: ${{ inputs.ttl || '' }}
-      disk: ${{ inputs.disk || '' }}
-      nodes: ${{ inputs.nodes || '' }}
-      min-nodes: ${{ inputs.min-nodes || '' }}
-      max-nodes: ${{ inputs.max-nodes || '' }}
-      instance-type: ${{ inputs.instance-type || '' }}
-      timeout-minutes: ${{ inputs.timeout-minutes || 20 }}
-      node-groups: ${{ inputs.node-groups || '' }}
-      tags: ${{ inputs.tags || '' }}
-      kubeconfig-path: ${{ inputs.kubeconfig-path || '' }}
-      export-kubeconfig: ${{ inputs.export-kubeconfig || false }}
+    shell: bash
+    run: |
+      node ${{ github.action_path }}/create-cluster.js
+    env:
+      INPUT_API-TOKEN: "${{ inputs.api-token }}"
+      INPUT_KUBERNETES-DISTRIBUTION: ${{ inputs.kubernetes-distribution }}
+      INPUT_KUBERNETES-VERSION: ${{ inputs.kubernetes-version }}
+      INPUT_CLUSTER-NAME: ${{ inputs.cluster-name || format('{0}-{1}-{2}', github.ref_name, inputs.kubernetes-distribution, inputs.kubernetes-version) }}
+      INPUT_TTL: ${{ inputs.ttl || '' }}
+      INPUT_DISK: ${{ inputs.disk || '' }}
+      INPUT_NODES: ${{ inputs.nodes || '' }}
+      INPUT_MIN-NODES: ${{ inputs.min-nodes || '' }}
+      INPUT_MAX-NODES: ${{ inputs.max-nodes || '' }}
+      INPUT_INSTANCE-TYPE: ${{ inputs.instance-type || '' }}
+      INPUT_TIMEOUT-MINUTES: ${{ inputs.timeout-minutes || 20 }}
+      INPUT_NODE-GROUPS: ${{ inputs.node-groups || '' }}
+      INPUT_TAGS: ${{ inputs.tags || '' }}
+      INPUT_KUBECONFIG-PATH: ${{ inputs.kubeconfig-path || '' }}
+      INPUT_EXPORT-KUBECONFIG: ${{ inputs.export-kubeconfig || false }}
   # - name: Deploy the app with Helm
   #   uses: replicatedhq/compatibility-actions/helm-install@${{ env.action_ref }}
   #   if: ${{ inputs.chart != '' }}

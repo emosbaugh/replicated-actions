@@ -11,7 +11,7 @@ package-main:
 	npm install && npm run build && npm run package
 
 .PHONY: package-prepare-cluster
-package-prepare-cluster:
+package-prepare-cluster: package-main
 	rm -rf ./prepare-cluster/build ./prepare-cluster/dist ./prepare-cluster/node_modules
 	cp -r dist prepare-cluster/
 
