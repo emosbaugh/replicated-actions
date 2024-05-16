@@ -1,14 +1,19 @@
 .PHONY: package-all
-package-all: package-main \
-			 package-archive-channel package-archive-customer package-create-cluster package-create-object-store \
+package-all: package-archive-channel package-archive-customer package-create-cluster package-create-object-store \
 			 package-create-postgres package-expose-port package-create-customer package-create-release \
 			 package-helm-install package-kots-install package-promote-release package-remove-cluster \
-			 package-get-customer-instances package-report-compatibility-result package-upgrade-cluster
+			 package-get-customer-instances package-report-compatibility-result package-upgrade-cluster \
+			 package-prepare-cluster
 
 .PHONY: package-main
 package-main:
 	rm -rf ./build ./dist ./node_modules
 	npm install && npm run build && npm run package
+
+.PHONY: package-prepare-cluster
+package-prepare-cluster:
+	rm -rf ./prepare-cluster/build ./prepare-cluster/dist ./prepare-cluster/node_modules
+	cp -r dist prepare-cluster/
 
 .PHONY: package-archive-channel
 package-archive-channel:
@@ -21,9 +26,9 @@ package-archive-customer:
 	cd ./archive-customer && npm install && npm run build && npm run package
 
 .PHONY: package-create-cluster
-package-create-cluster:
+package-create-cluster: package-main
 	rm -rf ./create-cluster/build ./create-cluster/dist ./create-cluster/node_modules
-	cd ./create-cluster && npm install && npm run build && npm run package
+	cp -r dist create-cluster/
 
 .PHONY: package-create-object-store
 package-create-object-store:
@@ -66,7 +71,7 @@ package-promote-release:
 	cd ./promote-release && npm install && npm run build && npm run package
 
 .PHONY: package-remove-cluster
-package-remove-cluster:
+package-remove-cluster: package-main
 	rm -rf ./remove-cluster/build ./remove-cluster/dist ./remove-cluster/node_modules
 	cp -r dist remove-cluster/
 

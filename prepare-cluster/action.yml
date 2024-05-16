@@ -106,25 +106,25 @@ outputs:
 runs:
   using: "composite"
   steps:
-  - name: 'Create Release'
-    id: 'create-release'
-    uses: replicatedhq/compatibility-actions/create-release@${{ env.action_ref }}
-    with:
-      app-slug: ${{ inputs.app-slug }}
-      api-token: ${{ inputs.api-token }}
-      yaml-dir: ${{ inputs.yaml-dir }}
-      chart: ${{ inputs.chart }}
-  - name: 'Create Customer'
-    id: 'create-customer'
-    uses: replicatedhq/compatibility-actions/create-customer@${{ env.action_ref }}
-    with:
-      app-slug: ${{ inputs.app-slug }}
-      api-token: ${{ inputs.api-token }}
-      customer-name: ${{ github.ref_name }}-${{ inputs.kubernetes-distribution }}-${{ inputs.kubernetes-version }}
-      customer-email: ${{ github.ref_name }}@example.com
-      license-type: "test"
-      entitlements: ${{ inputs.customer-entitlements }}
-      channel-slug: ${{ steps.create-release.outputs.channel-slug }}
+  # - name: 'Create Release'
+  #   id: 'create-release'
+  #   uses: replicatedhq/compatibility-actions/create-release@${{ env.action_ref }}
+  #   with:
+  #     app-slug: ${{ inputs.app-slug }}
+  #     api-token: ${{ inputs.api-token }}
+  #     yaml-dir: ${{ inputs.yaml-dir }}
+  #     chart: ${{ inputs.chart }}
+  # - name: 'Create Customer'
+  #   id: 'create-customer'
+  #   uses: replicatedhq/compatibility-actions/create-customer@${{ env.action_ref }}
+  #   with:
+  #     app-slug: ${{ inputs.app-slug }}
+  #     api-token: ${{ inputs.api-token }}
+  #     customer-name: ${{ github.ref_name }}-${{ inputs.kubernetes-distribution }}-${{ inputs.kubernetes-version }}
+  #     customer-email: ${{ github.ref_name }}@example.com
+  #     license-type: "test"
+  #     entitlements: ${{ inputs.customer-entitlements }}
+  #     channel-slug: ${{ steps.create-release.outputs.channel-slug }}
   - name: Create Cluster
     id: create-cluster
     uses: replicatedhq/compatibility-actions/create-cluster@${{ env.action_ref }}
@@ -144,26 +144,26 @@ runs:
       tags: ${{ inputs.tags || '' }}
       kubeconfig-path: ${{ inputs.kubeconfig-path || '' }}
       export-kubeconfig: ${{ inputs.export-kubeconfig || false }}
-  - name: Deploy the app with Helm
-    uses: replicatedhq/compatibility-actions/helm-install@${{ env.action_ref }}
-    if: ${{ inputs.chart != '' }}
-    with:
-      kubeconfig: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
-      helm-path: "helm"
-      registry-username: ${{ github.ref_name }}@example.com
-      registry-password: ${{ steps.create-customer.outputs.license-id }}
-      chart: oci://registry.replicated.com/${{ inputs.app-slug }}/release__${{ steps.create-release.outputs.release-sequence }}/${{ inputs.helm-chart-name }}
-      name: ${{ inputs.app-slug }}
-      namespace: 'default'
-      values: ${{ inputs.helm-values }}
-      run-preflights: ${{ inputs.helm-run-preflights }}
-  - name: Deploy the app with KOTS
-    if: ${{ inputs.yaml-dir != '' }}
-    uses: replicatedhq/compatibility-actions/kots-install@${{ env.action_ref }} 
-    with:
-      kubeconfig: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
-      app-slug: ${{ inputs.app-slug }}/test-channel
-      license-file: ${{ steps.create-customer.outputs.license-file }}
-      app-version-label: release__${{ steps.create-release.outputs.release-sequence }}
-      config-values: ${{ inputs.kots-config-values }}
-      wait-duration: ${{ inputs.kots-wait-duration }}
+  # - name: Deploy the app with Helm
+  #   uses: replicatedhq/compatibility-actions/helm-install@${{ env.action_ref }}
+  #   if: ${{ inputs.chart != '' }}
+  #   with:
+  #     kubeconfig: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
+  #     helm-path: "helm"
+  #     registry-username: ${{ github.ref_name }}@example.com
+  #     registry-password: ${{ steps.create-customer.outputs.license-id }}
+  #     chart: oci://registry.replicated.com/${{ inputs.app-slug }}/release__${{ steps.create-release.outputs.release-sequence }}/${{ inputs.helm-chart-name }}
+  #     name: ${{ inputs.app-slug }}
+  #     namespace: 'default'
+  #     values: ${{ inputs.helm-values }}
+  #     run-preflights: ${{ inputs.helm-run-preflights }}
+  # - name: Deploy the app with KOTS
+  #   if: ${{ inputs.yaml-dir != '' }}
+  #   uses: replicatedhq/compatibility-actions/kots-install@${{ env.action_ref }} 
+  #   with:
+  #     kubeconfig: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
+  #     app-slug: ${{ inputs.app-slug }}/test-channel
+  #     license-file: ${{ steps.create-customer.outputs.license-file }}
+  #     app-version-label: release__${{ steps.create-release.outputs.release-sequence }}
+  #     config-values: ${{ inputs.kots-config-values }}
+  #     wait-duration: ${{ inputs.kots-wait-duration }}

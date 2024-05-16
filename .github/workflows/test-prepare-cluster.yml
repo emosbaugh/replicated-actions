@@ -33,11 +33,7 @@ jobs:
 
       - name: build
         run: |
-          make package-create-release \
-            package-create-customer \
-            package-create-cluster \
-            package-helm-install \
-            package-kots-install
+          make package-prepare-cluster
 
       - name: pull helm chart
         run: |
