@@ -586,6 +586,207 @@ function checkForStrictFailures(resultPath) {
 
 /***/ }),
 
+/***/ 37449:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.actionKotsInstall = void 0;
+const core = __nccwpck_require__(42186);
+const kots_1 = __nccwpck_require__(74866);
+const tmp_promise_1 = __nccwpck_require__(68065);
+const fs = __nccwpck_require__(57147);
+function actionKotsInstall() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const licenseFileInput = core.getInput('license-file');
+        let licenseFilePath = '';
+        if (fs.existsSync(licenseFileInput)) {
+            licenseFilePath = licenseFileInput;
+        }
+        else {
+            const { path: licensePath } = yield (0, tmp_promise_1.file)({ postfix: '.yaml' });
+            fs.writeFileSync(licensePath, licenseFileInput);
+            licenseFilePath = licensePath;
+        }
+        const configValuesInput = core.getInput('config-values');
+        let valuesFilePath = '';
+        if (configValuesInput) {
+            if (fs.existsSync(configValuesInput)) {
+                valuesFilePath = configValuesInput;
+            }
+            else {
+                const { path: valuesPath } = yield (0, tmp_promise_1.file)({ postfix: '.yaml' });
+                fs.writeFileSync(valuesPath, core.getInput('config-values'));
+                valuesFilePath = valuesPath;
+            }
+        }
+        const kostPath = yield (0, kots_1.downloadKots)(core.getInput('kots-version'));
+        yield (0, kots_1.installApp)(kostPath, licenseFilePath, valuesFilePath);
+    });
+}
+exports.actionKotsInstall = actionKotsInstall;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 74866:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.installApp = exports.downloadKots = void 0;
+const core = __nccwpck_require__(42186);
+const exec = __nccwpck_require__(71514);
+const httpClient = __nccwpck_require__(96255);
+const fs = __nccwpck_require__(57147);
+const tmpPromise = __nccwpck_require__(68065);
+const path = __nccwpck_require__(71017);
+const randomstring = __nccwpck_require__(5581);
+function downloadKots(version) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            if (version === 'latest') {
+                version = yield getLatestKotsVersion();
+            }
+            core.info(`Downloading kots ${version}`);
+            const http = new httpClient.HttpClient();
+            http.requestOptions = {
+                allowRedirects: true
+            };
+            const uri = `https://github.com/replicatedhq/kots/releases/download/${version}/kots_linux_amd64.tar.gz`;
+            const { fd, path: downloadPath, cleanup } = yield (0, tmpPromise.file)({
+                postfix: '.tar.gz'
+            });
+            core.debug(`Downloading kots binary to temp file at ${downloadPath}`);
+            const f = fs.createWriteStream(downloadPath);
+            const res = yield http.get(uri);
+            const kotsPath = new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                core.info('Downloaded kots binary');
+                res.message.pipe(f).on('close', () => __awaiter(this, void 0, void 0, function* () {
+                    let tarOutput, tarError = '';
+                    const tarOptions = {};
+                    tarOptions.listeners = {
+                        stdout: (data) => {
+                            tarOutput += data.toString();
+                        },
+                        stderr: (data) => {
+                            tarError += data.toString();
+                        }
+                    };
+                    tarOptions.cwd = path.dirname(downloadPath);
+                    yield exec.exec('tar', [
+                        'xzf',
+                        downloadPath
+                    ], tarOptions);
+                    core.info('Extracted kots archive');
+                    const kotsPath = path.resolve(path.join(path.dirname(downloadPath), 'kots'));
+                    core.setOutput('kots-path', kotsPath);
+                    resolve(kotsPath);
+                }));
+            }));
+            return kotsPath;
+        }
+        catch (error) {
+            core.setFailed(error.message);
+            throw error;
+        }
+    });
+}
+exports.downloadKots = downloadKots;
+function getLatestKotsVersion() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const http = new httpClient.HttpClient();
+            const res = yield http.get(`https://kots.io/install?version`);
+            if (res.message.statusCode != 200) {
+                throw new Error(`Failed to get latest kots version: Server responded with ${res.message.statusCode}`);
+            }
+            const body = yield res.readBody();
+            return body;
+        }
+        catch (err) {
+            core.setFailed(err.message);
+            throw err;
+        }
+    });
+}
+function installApp(kotsPath, licenseFilePath, configFilePath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const kubeconfig = core.getInput('kubeconfig');
+            const slug = core.getInput('app-slug');
+            const appVersionLabel = core.getInput('app-version-label');
+            const namespace = core.getInput('namespace');
+            const waitDuration = core.getInput('wait-duration');
+            // write the kubeconfig to a temp file
+            const { fd, path: kubeconfigPath, cleanup } = yield (0, tmpPromise.file)({
+                postfix: '.yaml'
+            });
+            fs.writeFileSync(kubeconfigPath, kubeconfig);
+            const installOptions = {};
+            // Allow configuring the shared password
+            const sharedPassword = core.getInput('shared-password');
+            let password;
+            if (sharedPassword) {
+                password = sharedPassword;
+            }
+            else {
+                password = randomstring.generate(12);
+            }
+            const params = [
+                'install',
+                slug,
+                "--namespace",
+                namespace,
+                "--shared-password",
+                password,
+                "--no-port-forward",
+                "--skip-preflights"
+            ];
+            params.push("--license-file", licenseFilePath);
+            params.push("--kubeconfig", kubeconfigPath);
+            if (configFilePath !== '') {
+                params.push("--config-values", configFilePath);
+            }
+            if (appVersionLabel) {
+                params.push("--app-version-label", appVersionLabel);
+            }
+            if (waitDuration) {
+                params.push("--wait-duration", waitDuration);
+            }
+            yield exec.exec(kotsPath, params, installOptions);
+            cleanup();
+        }
+        catch (error) {
+            core.setFailed(error.message);
+        }
+    });
+}
+exports.installApp = installApp;
+//# sourceMappingURL=kots.js.map
+
+/***/ }),
+
 /***/ 22852:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -32169,6 +32370,213 @@ function ZStream() {
 }
 
 module.exports = ZStream;
+
+
+/***/ }),
+
+/***/ 55711:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+module.exports = __nccwpck_require__(6113).randomBytes
+
+
+/***/ }),
+
+/***/ 5581:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+module.exports = __nccwpck_require__(57375);
+
+/***/ }),
+
+/***/ 19376:
+/***/ ((module, exports) => {
+
+function Charset() {
+  this.chars = '';
+}
+
+Charset.prototype.setType = function(type) {
+  if (Array.isArray(type)) {
+    for (var i=0; i < type.length; i++) {
+      this.chars += this.getCharacters(type[i]);
+    }
+  }
+  else {
+    this.chars = this.getCharacters(type);
+  }
+}
+
+Charset.prototype.getCharacters = function(type) {
+  var chars;
+
+  var numbers     = '0123456789';
+  var charsLower  = 'abcdefghijklmnopqrstuvwxyz';
+  var charsUpper  = charsLower.toUpperCase();
+  var hexChars    = 'abcdef';
+  var binaryChars = '01';
+  var octalChars  = '01234567';
+
+  if (type === 'alphanumeric') {
+    chars = numbers + charsLower + charsUpper;
+  }
+  else if (type === 'numeric') {
+    chars = numbers;
+  }
+  else if (type === 'alphabetic') {
+    chars = charsLower + charsUpper;
+  }
+  else if (type === 'hex') {
+    chars = numbers + hexChars;
+  }
+  else if (type === 'binary') {
+    chars = binaryChars;
+  }
+  else if (type === 'octal') {
+    chars = octalChars;
+  }
+  else {
+    chars = type;
+  }
+
+  return chars;
+}
+
+Charset.prototype.removeUnreadable = function() {
+  var unreadableChars = /[0OIl]/g;
+  this.chars = this.chars.replace(unreadableChars, '');
+}
+
+Charset.prototype.setcapitalization = function(capitalization) {
+  if (capitalization === 'uppercase') {
+    this.chars = this.chars.toUpperCase();
+  }
+  else if (capitalization === 'lowercase') {
+    this.chars = this.chars.toLowerCase();
+  }
+}
+
+Charset.prototype.removeDuplicates = function() {
+  var charMap = this.chars.split('');
+  charMap = [...new Set(charMap)];
+  this.chars = charMap.join('');
+}
+
+module.exports = exports = Charset;
+
+
+/***/ }),
+
+/***/ 57375:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var randomBytes = __nccwpck_require__(55711);
+var Charset = __nccwpck_require__(19376);
+
+
+function unsafeRandomBytes(length) {
+  var stack = [];
+  for (var i = 0; i < length; i++) {
+    stack.push(Math.floor(Math.random() * 255));
+  }
+
+  return {
+    length,
+    readUInt8: function (index) {
+      return stack[index];
+    }
+  };
+}
+
+function safeRandomBytes(length) {
+  try {
+    return randomBytes(length);
+  } catch (e) {
+    /* React/React Native Fix + Eternal loop removed */
+    return unsafeRandomBytes(length);
+  }
+}
+
+function processString(buf, initialString, chars, reqLen, maxByte) {
+  var string = initialString;
+  for (var i = 0; i < buf.length && string.length < reqLen; i++) {
+    var randomByte = buf.readUInt8(i);
+    if (randomByte < maxByte) {
+      string += chars.charAt(randomByte % chars.length);
+    }
+  }
+  return string;
+}
+
+function getAsyncString(string, chars, length, maxByte, cb) {
+  randomBytes(length, function(err, buf) {
+    if (err) {
+      // Since it is waiting for entropy, errors are legit and we shouldn't just keep retrying
+      cb(err);
+    }
+    var generatedString = processString(buf, string, chars, length, maxByte);
+    if (generatedString.length < length) {
+      getAsyncString(generatedString, chars, length, maxByte, cb);
+    } else {
+      cb(null, generatedString);
+    }
+  })
+}
+
+exports.generate = function(options, cb) {
+  var charset = new Charset();
+
+  var length, chars, capitalization, string = '';
+
+  // Handle options
+  if (typeof options === 'object') {
+    length = typeof options.length === 'number' ? options.length : 32;
+
+    if (options.charset) {
+      charset.setType(options.charset);
+    }
+    else {
+      charset.setType('alphanumeric');
+    }
+
+    if (options.capitalization) {
+      charset.setcapitalization(options.capitalization);
+    }
+
+    if (options.readable) {
+      charset.removeUnreadable();
+    }
+
+    charset.removeDuplicates();
+  }
+  else if (typeof options === 'number') {
+    length = options;
+    charset.setType('alphanumeric');
+  }
+  else {
+    length = 32;
+    charset.setType('alphanumeric');
+  }
+
+  // Generate the string
+  var charsLen = charset.chars.length;
+  var maxByte = 256 - (256 % charsLen);
+
+  if (!cb) {
+    while (string.length < length) {
+      var buf = safeRandomBytes(Math.ceil(length * 256 / maxByte));
+      string = processString(buf, string, charset.chars, length, maxByte);
+    }
+
+    return string;
+  }
+
+  getAsyncString(string, charset.chars, length, maxByte, cb);
+
+};
 
 
 /***/ }),
@@ -69382,11 +69790,13 @@ const create_cluster_1 = __nccwpck_require__(4468);
 const create_customer_1 = __nccwpck_require__(41055);
 const create_release_1 = __nccwpck_require__(53440);
 const helm_install_1 = __nccwpck_require__(42185);
+const kots_install_1 = __nccwpck_require__(37449);
 const remove_cluster_1 = __nccwpck_require__(22852);
 exports.actionCreateCluster = create_cluster_1.actionCreateCluster;
 exports.actionCreateCustomer = create_customer_1.actionCreateCustomer;
 exports.actionCreateRelease = create_release_1.actionCreateRelease;
 exports.actionHelmInstall = helm_install_1.actionHelmInstall;
+exports.actionKotsInstall = kots_install_1.actionKotsInstall;
 exports.actionRemoveCluster = remove_cluster_1.actionRemoveCluster;
 //# sourceMappingURL=index.js.map
 })();

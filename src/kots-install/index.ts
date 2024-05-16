@@ -3,8 +3,7 @@ import { downloadKots, installApp } from './kots';
 import { file } from 'tmp-promise';
 import * as fs from 'fs';
 
-async function run() {
-
+export async function actionKotsInstall() {
   const licenseFileInput = core.getInput('license-file')
   let licenseFilePath = '';
   if (fs.existsSync(licenseFileInput)) {
@@ -27,12 +26,6 @@ async function run() {
     }
   }
 
-
-
   const kostPath: string = await downloadKots(core.getInput('kots-version'));
   await installApp(kostPath, licenseFilePath, valuesFilePath);
-
 }
-
-run()
-

@@ -1,7 +1,7 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 32139:
+/***/ 4468:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -105,11 +105,689 @@ function processNodeGroups(nodeGroups) {
     }
     return undefined;
 }
-//# sourceMappingURL=create-cluster.js.map
+//# sourceMappingURL=index.js.map
 
 /***/ }),
 
-/***/ 40031:
+/***/ 41055:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.actionCreateCustomer = void 0;
+const core = __nccwpck_require__(42186);
+const replicated_lib_1 = __nccwpck_require__(34409);
+const yaml_1 = __nccwpck_require__(44083);
+function actionCreateCustomer() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const appSlug = core.getInput('app-slug');
+            const apiToken = core.getInput('api-token');
+            const name = core.getInput('customer-name');
+            const email = core.getInput('customer-email');
+            const licenseType = core.getInput('license-type');
+            const channelSlug = core.getInput('channel-slug');
+            const apiEndpoint = core.getInput('replicated-api-endpoint');
+            const expiresInDays = +(core.getInput('expires-in') || 0);
+            const entitlements = core.getInput('entitlements');
+            const isKotsInstallEnabled = core.getBooleanInput('is-kots-install-enabled');
+            const apiClient = new replicated_lib_1.VendorPortalApi();
+            apiClient.apiToken = apiToken;
+            if (apiEndpoint) {
+                apiClient.endpoint = apiEndpoint;
+            }
+            const entitlementsArray = processEntitlements(entitlements);
+            const customer = yield (0, replicated_lib_1.createCustomer)(apiClient, appSlug, name, email, licenseType, channelSlug, expiresInDays, entitlementsArray, isKotsInstallEnabled);
+            core.setOutput('customer-id', customer.customerId);
+            core.setOutput('license-id', customer.licenseId);
+            core.setOutput('license-file', customer.license);
+        }
+        catch (error) {
+            core.setFailed(error.message);
+        }
+    });
+}
+exports.actionCreateCustomer = actionCreateCustomer;
+function processEntitlements(entitlements) {
+    if (entitlements) {
+        const entitlementsYAML = (0, yaml_1.parse)(entitlements);
+        // for each entitlement in entitlementsYAML, convert to json and add to array
+        const entitlementsArray = entitlementsYAML.map((entitlement) => {
+            return { name: entitlement.name, value: entitlement.value };
+        });
+        return entitlementsArray;
+    }
+    return undefined;
+}
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 53440:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.actionCreateRelease = void 0;
+const core = __nccwpck_require__(42186);
+const replicated_lib_1 = __nccwpck_require__(34409);
+function actionCreateRelease() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const appSlug = core.getInput('app-slug');
+            const apiToken = core.getInput('api-token');
+            const chart = core.getInput('chart');
+            const yamlDir = core.getInput('yaml-dir');
+            const promoteChannel = core.getInput('promote-channel');
+            const releaseVersion = core.getInput('version');
+            const apiEndpoint = core.getInput('replicated-api-endpoint');
+            const apiClient = new replicated_lib_1.VendorPortalApi();
+            apiClient.apiToken = apiToken;
+            if (apiEndpoint) {
+                apiClient.endpoint = apiEndpoint;
+            }
+            if (chart && yamlDir) {
+                core.setFailed('You must provide either a chart or a YAML directory, not both');
+            }
+            if (chart === "" && yamlDir === "") {
+                core.setFailed('You must provide either a chart or a YAML directory');
+            }
+            let release;
+            if (chart) {
+                release = yield (0, replicated_lib_1.createReleaseFromChart)(apiClient, appSlug, chart);
+            }
+            else {
+                release = yield (0, replicated_lib_1.createRelease)(apiClient, appSlug, yamlDir);
+            }
+            // If promote channel is specified, promote release
+            if (promoteChannel) {
+                const channel = (0, replicated_lib_1.getChannelDetails)(apiClient, appSlug, { name: promoteChannel });
+                let resolvedChannel;
+                yield channel.then((channel) => {
+                    console.log(channel.name);
+                    resolvedChannel = channel;
+                }, (reason) => {
+                    if (reason.channel === null) {
+                        console.error(reason.reason);
+                    }
+                });
+                if (!resolvedChannel) {
+                    resolvedChannel = yield (0, replicated_lib_1.createChannel)(apiClient, appSlug, promoteChannel);
+                }
+                yield (0, replicated_lib_1.promoteRelease)(apiClient, appSlug, resolvedChannel.id, +release.sequence, releaseVersion);
+                core.setOutput('channel-slug', resolvedChannel.slug);
+            }
+            core.setOutput('release-sequence', release.sequence);
+        }
+        catch (error) {
+            core.setFailed(error.message);
+        }
+    });
+}
+exports.actionCreateRelease = actionCreateRelease;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 53969:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.templateChart = exports.installChart = exports.login = exports.repoAdd = void 0;
+const core = __nccwpck_require__(42186);
+const exec = __nccwpck_require__(71514);
+const fs = __nccwpck_require__(57147);
+const tmpPromise = __nccwpck_require__(68065);
+const url = __nccwpck_require__(57310);
+function repoAdd(helmPath, repoName, repoUrl) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const params = ["repo", "add", repoName, repoUrl];
+            yield exec.exec(helmPath, params);
+        }
+        catch (error) {
+            core.setFailed(error.message);
+        }
+    });
+}
+exports.repoAdd = repoAdd;
+function login(helmPath, username, password, chart) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            if (!username || !password) {
+                core.info("No username or password provided, skipping login");
+                return;
+            }
+            const parsed = url.parse(chart);
+            const loginOptions = {};
+            const hostname = parsed.hostname || "";
+            const params = [
+                "registry",
+                "login",
+                hostname,
+                "--username",
+                username,
+                "--password",
+                password,
+            ];
+            yield exec.exec(helmPath, params, loginOptions);
+        }
+        catch (error) {
+            core.setFailed(error.message);
+        }
+    });
+}
+exports.login = login;
+function installChart(helmPath, kubeconfig, chart, version, releaseName, namespace, valuesPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            // write the kubeconfig to a temp file
+            const { fd, path: kubeconfigPath, cleanup, } = yield tmpPromise.file({ postfix: ".yaml" });
+            fs.writeFileSync(kubeconfigPath, kubeconfig);
+            const installOptions = {};
+            const params = [
+                "upgrade",
+                releaseName,
+                "--install",
+                "--kubeconfig",
+                kubeconfigPath,
+                "--namespace",
+                namespace,
+                "--create-namespace",
+                chart,
+            ];
+            if (version) {
+                params.push(`--version`, version);
+            }
+            if (valuesPath !== "") {
+                params.push("--values", valuesPath);
+            }
+            yield exec.exec(helmPath, params, installOptions);
+            cleanup();
+        }
+        catch (error) {
+            core.setFailed(error.message);
+        }
+    });
+}
+exports.installChart = installChart;
+function templateChart(helmPath, chart, version, valuesPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            let templateOutput = "";
+            const { path: tmpDir, cleanup } = yield tmpPromise.dir({
+                unsafeCleanup: true,
+            });
+            const installOptions = {};
+            installOptions.silent = true;
+            installOptions.listeners = {
+                stdout: (data) => {
+                    templateOutput += data.toString();
+                },
+                stderr: (data) => {
+                    core.info(data.toString());
+                },
+            };
+            const params = ["template", chart];
+            if (version) {
+                params.push(`--version`, version);
+            }
+            if (valuesPath !== "") {
+                params.push("--values", valuesPath);
+            }
+            yield exec.exec(helmPath, params, installOptions);
+            cleanup();
+            return templateOutput;
+        }
+        catch (error) {
+            core.setFailed(error.message);
+            throw error;
+        }
+    });
+}
+exports.templateChart = templateChart;
+//# sourceMappingURL=helm.js.map
+
+/***/ }),
+
+/***/ 42185:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.actionHelmInstall = void 0;
+const core = __nccwpck_require__(42186);
+const helm_1 = __nccwpck_require__(53969);
+const tmp_promise_1 = __nccwpck_require__(68065);
+const fs = __nccwpck_require__(57147);
+const preflight_1 = __nccwpck_require__(63900);
+function actionHelmInstall() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const helmPath = core.getInput('helm-path');
+        const kubeconfig = core.getInput('kubeconfig');
+        const namespace = core.getInput('namespace');
+        const registryUsername = core.getInput('registry-username');
+        const registryPassword = core.getInput('registry-password');
+        const runPreflights = core.getBooleanInput('run-preflights');
+        const values = core.getInput('values');
+        const repoName = core.getInput('repo-name');
+        const repoUrl = core.getInput('repo-url');
+        const chart = core.getInput('chart');
+        const version = core.getInput('version');
+        const name = core.getInput('name');
+        // Write the values
+        let valuesFilePath = '';
+        if (values) {
+            const { fd, path: valuesPath, cleanup: cleanupValues } = yield (0, tmp_promise_1.file)({ postfix: '.yaml' });
+            fs.writeFileSync(valuesPath, values);
+            valuesFilePath = valuesPath;
+        }
+        // if there's a repo, this is not a oci or local chart
+        if (repoName && repoUrl) {
+            yield (0, helm_1.repoAdd)(helmPath, repoName, repoUrl);
+        }
+        // registry login
+        yield (0, helm_1.login)(helmPath, registryUsername, registryPassword, chart);
+        if (runPreflights) {
+            // install troubleshoot.sh preflight kubectl plugin
+            const preflightPath = yield (0, preflight_1.downloadPreflight)();
+            // run preflight checks
+            const templatedChart = yield (0, helm_1.templateChart)(helmPath, chart, version, valuesFilePath);
+            yield (0, preflight_1.runPreflight)(preflightPath, kubeconfig, templatedChart);
+        }
+        yield (0, helm_1.installChart)(helmPath, kubeconfig, chart, version, name, namespace, valuesFilePath);
+    });
+}
+exports.actionHelmInstall = actionHelmInstall;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 63900:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.runPreflight = exports.downloadPreflight = void 0;
+const core = __nccwpck_require__(42186);
+const exec = __nccwpck_require__(71514);
+const httpClient = __nccwpck_require__(96255);
+const tmpPromise = __nccwpck_require__(68065);
+const fs = __nccwpck_require__(57147);
+const path = __nccwpck_require__(71017);
+const tmp_promise_1 = __nccwpck_require__(68065);
+function downloadPreflight() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            core.info(`Downloading latest preflight`);
+            const http = new httpClient.HttpClient();
+            http.requestOptions = {
+                allowRedirects: true
+            };
+            const uri = `https://github.com/replicatedhq/troubleshoot/releases/latest/download/preflight_linux_amd64.tar.gz`;
+            const { fd, path: downloadPath, cleanup } = yield (0, tmpPromise.file)({
+                postfix: '.tar.gz'
+            });
+            core.debug(`Downloading preflight binary to temp file at ${downloadPath}`);
+            const f = fs.createWriteStream(downloadPath);
+            const res = yield http.get(uri);
+            const preflightPath = new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                core.info('Downloaded preflight binary');
+                res.message.pipe(f).on('close', () => __awaiter(this, void 0, void 0, function* () {
+                    let tarOutput, tarError = '';
+                    const tarOptions = {};
+                    tarOptions.listeners = {
+                        stdout: (data) => {
+                            tarOutput += data.toString();
+                        },
+                        stderr: (data) => {
+                            tarError += data.toString();
+                        }
+                    };
+                    tarOptions.cwd = path.dirname(downloadPath);
+                    yield exec.exec('tar', [
+                        'xzf',
+                        downloadPath
+                    ], tarOptions);
+                    core.info('Extracted preflight archive');
+                    const preflightPath = path.resolve(path.join(path.dirname(downloadPath), 'preflight'));
+                    core.setOutput('preflight-path', preflightPath);
+                    resolve(preflightPath);
+                }));
+            }));
+            return preflightPath;
+        }
+        catch (error) {
+            core.setFailed(error.message);
+            throw error;
+        }
+    });
+}
+exports.downloadPreflight = downloadPreflight;
+function runPreflight(preflightPath, kubeconfig, templatedChart) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            // write the kubeconfig to a temp file
+            const { fd: kubeconfgiFD, path: kubeconfigPath, cleanup: cleanupKubeconfig } = yield (0, tmp_promise_1.file)({ postfix: '.yaml' });
+            fs.writeFileSync(kubeconfigPath, kubeconfig);
+            // write the templatedChart to a temp file
+            const { fd: templatedChartFD, path: templatedChartPath, cleanup: cleanupTemplatedChart } = yield (0, tmp_promise_1.file)({ postfix: '.yaml' });
+            fs.writeFileSync(templatedChartPath, templatedChart);
+            // write the output to a temp file
+            const { path: outputPath } = yield (0, tmp_promise_1.file)({ postfix: '.yaml' });
+            const installOptions = {};
+            installOptions.ignoreReturnCode = true;
+            installOptions.silent = false;
+            const params = [
+                templatedChartPath,
+                '--kubeconfig', kubeconfigPath,
+                '--interactive=false',
+                '--format', 'json',
+                '--output', outputPath,
+            ];
+            yield exec.exec(preflightPath, params, installOptions);
+            const strictFailures = yield checkForStrictFailures(outputPath);
+            if (strictFailures.length > 0) {
+                core.error(`Found ${strictFailures.length} strict failures:`);
+                for (let failure of strictFailures) {
+                    core.error(failure);
+                }
+                throw new Error('Preflight checks failed');
+            }
+            cleanupKubeconfig();
+            cleanupTemplatedChart();
+        }
+        catch (error) {
+            core.setFailed(error.message);
+            throw error;
+        }
+    });
+}
+exports.runPreflight = runPreflight;
+function checkForStrictFailures(resultPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a;
+        try {
+            const result = fs.readFileSync(resultPath, 'utf8');
+            const report = JSON.parse(result);
+            // strictFailures will contain all failures as array of strings
+            let strictFailures = [];
+            // if report contains 'fail' results, set strictFailures to true
+            if (((_a = report.fail) === null || _a === void 0 ? void 0 : _a.length) > 0) {
+                for (const fail of report.fail) {
+                    if (fail.strict && fail.strict === true) {
+                        strictFailures.push(fail.message);
+                    }
+                }
+            }
+            return strictFailures;
+        }
+        catch (error) {
+            core.setFailed(error.message);
+            throw error;
+        }
+        finally {
+            fs.unlinkSync(resultPath);
+        }
+    });
+}
+//# sourceMappingURL=preflight.js.map
+
+/***/ }),
+
+/***/ 37449:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.actionKotsInstall = void 0;
+const core = __nccwpck_require__(42186);
+const kots_1 = __nccwpck_require__(74866);
+const tmp_promise_1 = __nccwpck_require__(68065);
+const fs = __nccwpck_require__(57147);
+function actionKotsInstall() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const licenseFileInput = core.getInput('license-file');
+        let licenseFilePath = '';
+        if (fs.existsSync(licenseFileInput)) {
+            licenseFilePath = licenseFileInput;
+        }
+        else {
+            const { path: licensePath } = yield (0, tmp_promise_1.file)({ postfix: '.yaml' });
+            fs.writeFileSync(licensePath, licenseFileInput);
+            licenseFilePath = licensePath;
+        }
+        const configValuesInput = core.getInput('config-values');
+        let valuesFilePath = '';
+        if (configValuesInput) {
+            if (fs.existsSync(configValuesInput)) {
+                valuesFilePath = configValuesInput;
+            }
+            else {
+                const { path: valuesPath } = yield (0, tmp_promise_1.file)({ postfix: '.yaml' });
+                fs.writeFileSync(valuesPath, core.getInput('config-values'));
+                valuesFilePath = valuesPath;
+            }
+        }
+        const kostPath = yield (0, kots_1.downloadKots)(core.getInput('kots-version'));
+        yield (0, kots_1.installApp)(kostPath, licenseFilePath, valuesFilePath);
+    });
+}
+exports.actionKotsInstall = actionKotsInstall;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 74866:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.installApp = exports.downloadKots = void 0;
+const core = __nccwpck_require__(42186);
+const exec = __nccwpck_require__(71514);
+const httpClient = __nccwpck_require__(96255);
+const fs = __nccwpck_require__(57147);
+const tmpPromise = __nccwpck_require__(68065);
+const path = __nccwpck_require__(71017);
+const randomstring = __nccwpck_require__(5581);
+function downloadKots(version) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            if (version === 'latest') {
+                version = yield getLatestKotsVersion();
+            }
+            core.info(`Downloading kots ${version}`);
+            const http = new httpClient.HttpClient();
+            http.requestOptions = {
+                allowRedirects: true
+            };
+            const uri = `https://github.com/replicatedhq/kots/releases/download/${version}/kots_linux_amd64.tar.gz`;
+            const { fd, path: downloadPath, cleanup } = yield (0, tmpPromise.file)({
+                postfix: '.tar.gz'
+            });
+            core.debug(`Downloading kots binary to temp file at ${downloadPath}`);
+            const f = fs.createWriteStream(downloadPath);
+            const res = yield http.get(uri);
+            const kotsPath = new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                core.info('Downloaded kots binary');
+                res.message.pipe(f).on('close', () => __awaiter(this, void 0, void 0, function* () {
+                    let tarOutput, tarError = '';
+                    const tarOptions = {};
+                    tarOptions.listeners = {
+                        stdout: (data) => {
+                            tarOutput += data.toString();
+                        },
+                        stderr: (data) => {
+                            tarError += data.toString();
+                        }
+                    };
+                    tarOptions.cwd = path.dirname(downloadPath);
+                    yield exec.exec('tar', [
+                        'xzf',
+                        downloadPath
+                    ], tarOptions);
+                    core.info('Extracted kots archive');
+                    const kotsPath = path.resolve(path.join(path.dirname(downloadPath), 'kots'));
+                    core.setOutput('kots-path', kotsPath);
+                    resolve(kotsPath);
+                }));
+            }));
+            return kotsPath;
+        }
+        catch (error) {
+            core.setFailed(error.message);
+            throw error;
+        }
+    });
+}
+exports.downloadKots = downloadKots;
+function getLatestKotsVersion() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const http = new httpClient.HttpClient();
+            const res = yield http.get(`https://kots.io/install?version`);
+            if (res.message.statusCode != 200) {
+                throw new Error(`Failed to get latest kots version: Server responded with ${res.message.statusCode}`);
+            }
+            const body = yield res.readBody();
+            return body;
+        }
+        catch (err) {
+            core.setFailed(err.message);
+            throw err;
+        }
+    });
+}
+function installApp(kotsPath, licenseFilePath, configFilePath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const kubeconfig = core.getInput('kubeconfig');
+            const slug = core.getInput('app-slug');
+            const appVersionLabel = core.getInput('app-version-label');
+            const namespace = core.getInput('namespace');
+            const waitDuration = core.getInput('wait-duration');
+            // write the kubeconfig to a temp file
+            const { fd, path: kubeconfigPath, cleanup } = yield (0, tmpPromise.file)({
+                postfix: '.yaml'
+            });
+            fs.writeFileSync(kubeconfigPath, kubeconfig);
+            const installOptions = {};
+            // Allow configuring the shared password
+            const sharedPassword = core.getInput('shared-password');
+            let password;
+            if (sharedPassword) {
+                password = sharedPassword;
+            }
+            else {
+                password = randomstring.generate(12);
+            }
+            const params = [
+                'install',
+                slug,
+                "--namespace",
+                namespace,
+                "--shared-password",
+                password,
+                "--no-port-forward",
+                "--skip-preflights"
+            ];
+            params.push("--license-file", licenseFilePath);
+            params.push("--kubeconfig", kubeconfigPath);
+            if (configFilePath !== '') {
+                params.push("--config-values", configFilePath);
+            }
+            if (appVersionLabel) {
+                params.push("--app-version-label", appVersionLabel);
+            }
+            if (waitDuration) {
+                params.push("--wait-duration", waitDuration);
+            }
+            yield exec.exec(kotsPath, params, installOptions);
+            cleanup();
+        }
+        catch (error) {
+            core.setFailed(error.message);
+        }
+    });
+}
+exports.installApp = installApp;
+//# sourceMappingURL=kots.js.map
+
+/***/ }),
+
+/***/ 22852:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -132,7 +810,7 @@ function actionRemoveCluster() {
         try {
             const apiToken = core.getInput('api-token');
             const clusterId = core.getInput('cluster-id');
-            core.info(`Removing cluster ${clusterId}...`);
+            core.debug(`Removing cluster ${clusterId}...`);
             const apiEndpoint = core.getInput('replicated-api-endpoint');
             const apiClient = new replicated_lib_1.VendorPortalApi();
             apiClient.apiToken = apiToken;
@@ -148,7 +826,7 @@ function actionRemoveCluster() {
     });
 }
 exports.actionRemoveCluster = actionRemoveCluster;
-//# sourceMappingURL=remove-cluster.js.map
+//# sourceMappingURL=index.js.map
 
 /***/ }),
 
@@ -1145,6 +1823,741 @@ exports.toCommandProperties = toCommandProperties;
 
 /***/ }),
 
+/***/ 71514:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getExecOutput = exports.exec = void 0;
+const string_decoder_1 = __nccwpck_require__(71576);
+const tr = __importStar(__nccwpck_require__(88159));
+/**
+ * Exec a command.
+ * Output will be streamed to the live console.
+ * Returns promise with return code
+ *
+ * @param     commandLine        command to execute (can include additional args). Must be correctly escaped.
+ * @param     args               optional arguments for tool. Escaping is handled by the lib.
+ * @param     options            optional exec options.  See ExecOptions
+ * @returns   Promise<number>    exit code
+ */
+function exec(commandLine, args, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const commandArgs = tr.argStringToArray(commandLine);
+        if (commandArgs.length === 0) {
+            throw new Error(`Parameter 'commandLine' cannot be null or empty.`);
+        }
+        // Path to tool to execute should be first arg
+        const toolPath = commandArgs[0];
+        args = commandArgs.slice(1).concat(args || []);
+        const runner = new tr.ToolRunner(toolPath, args, options);
+        return runner.exec();
+    });
+}
+exports.exec = exec;
+/**
+ * Exec a command and get the output.
+ * Output will be streamed to the live console.
+ * Returns promise with the exit code and collected stdout and stderr
+ *
+ * @param     commandLine           command to execute (can include additional args). Must be correctly escaped.
+ * @param     args                  optional arguments for tool. Escaping is handled by the lib.
+ * @param     options               optional exec options.  See ExecOptions
+ * @returns   Promise<ExecOutput>   exit code, stdout, and stderr
+ */
+function getExecOutput(commandLine, args, options) {
+    var _a, _b;
+    return __awaiter(this, void 0, void 0, function* () {
+        let stdout = '';
+        let stderr = '';
+        //Using string decoder covers the case where a mult-byte character is split
+        const stdoutDecoder = new string_decoder_1.StringDecoder('utf8');
+        const stderrDecoder = new string_decoder_1.StringDecoder('utf8');
+        const originalStdoutListener = (_a = options === null || options === void 0 ? void 0 : options.listeners) === null || _a === void 0 ? void 0 : _a.stdout;
+        const originalStdErrListener = (_b = options === null || options === void 0 ? void 0 : options.listeners) === null || _b === void 0 ? void 0 : _b.stderr;
+        const stdErrListener = (data) => {
+            stderr += stderrDecoder.write(data);
+            if (originalStdErrListener) {
+                originalStdErrListener(data);
+            }
+        };
+        const stdOutListener = (data) => {
+            stdout += stdoutDecoder.write(data);
+            if (originalStdoutListener) {
+                originalStdoutListener(data);
+            }
+        };
+        const listeners = Object.assign(Object.assign({}, options === null || options === void 0 ? void 0 : options.listeners), { stdout: stdOutListener, stderr: stdErrListener });
+        const exitCode = yield exec(commandLine, args, Object.assign(Object.assign({}, options), { listeners }));
+        //flush any remaining characters
+        stdout += stdoutDecoder.end();
+        stderr += stderrDecoder.end();
+        return {
+            exitCode,
+            stdout,
+            stderr
+        };
+    });
+}
+exports.getExecOutput = getExecOutput;
+//# sourceMappingURL=exec.js.map
+
+/***/ }),
+
+/***/ 88159:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.argStringToArray = exports.ToolRunner = void 0;
+const os = __importStar(__nccwpck_require__(22037));
+const events = __importStar(__nccwpck_require__(82361));
+const child = __importStar(__nccwpck_require__(32081));
+const path = __importStar(__nccwpck_require__(71017));
+const io = __importStar(__nccwpck_require__(47351));
+const ioUtil = __importStar(__nccwpck_require__(81962));
+const timers_1 = __nccwpck_require__(39512);
+/* eslint-disable @typescript-eslint/unbound-method */
+const IS_WINDOWS = process.platform === 'win32';
+/*
+ * Class for running command line tools. Handles quoting and arg parsing in a platform agnostic way.
+ */
+class ToolRunner extends events.EventEmitter {
+    constructor(toolPath, args, options) {
+        super();
+        if (!toolPath) {
+            throw new Error("Parameter 'toolPath' cannot be null or empty.");
+        }
+        this.toolPath = toolPath;
+        this.args = args || [];
+        this.options = options || {};
+    }
+    _debug(message) {
+        if (this.options.listeners && this.options.listeners.debug) {
+            this.options.listeners.debug(message);
+        }
+    }
+    _getCommandString(options, noPrefix) {
+        const toolPath = this._getSpawnFileName();
+        const args = this._getSpawnArgs(options);
+        let cmd = noPrefix ? '' : '[command]'; // omit prefix when piped to a second tool
+        if (IS_WINDOWS) {
+            // Windows + cmd file
+            if (this._isCmdFile()) {
+                cmd += toolPath;
+                for (const a of args) {
+                    cmd += ` ${a}`;
+                }
+            }
+            // Windows + verbatim
+            else if (options.windowsVerbatimArguments) {
+                cmd += `"${toolPath}"`;
+                for (const a of args) {
+                    cmd += ` ${a}`;
+                }
+            }
+            // Windows (regular)
+            else {
+                cmd += this._windowsQuoteCmdArg(toolPath);
+                for (const a of args) {
+                    cmd += ` ${this._windowsQuoteCmdArg(a)}`;
+                }
+            }
+        }
+        else {
+            // OSX/Linux - this can likely be improved with some form of quoting.
+            // creating processes on Unix is fundamentally different than Windows.
+            // on Unix, execvp() takes an arg array.
+            cmd += toolPath;
+            for (const a of args) {
+                cmd += ` ${a}`;
+            }
+        }
+        return cmd;
+    }
+    _processLineBuffer(data, strBuffer, onLine) {
+        try {
+            let s = strBuffer + data.toString();
+            let n = s.indexOf(os.EOL);
+            while (n > -1) {
+                const line = s.substring(0, n);
+                onLine(line);
+                // the rest of the string ...
+                s = s.substring(n + os.EOL.length);
+                n = s.indexOf(os.EOL);
+            }
+            return s;
+        }
+        catch (err) {
+            // streaming lines to console is best effort.  Don't fail a build.
+            this._debug(`error processing line. Failed with error ${err}`);
+            return '';
+        }
+    }
+    _getSpawnFileName() {
+        if (IS_WINDOWS) {
+            if (this._isCmdFile()) {
+                return process.env['COMSPEC'] || 'cmd.exe';
+            }
+        }
+        return this.toolPath;
+    }
+    _getSpawnArgs(options) {
+        if (IS_WINDOWS) {
+            if (this._isCmdFile()) {
+                let argline = `/D /S /C "${this._windowsQuoteCmdArg(this.toolPath)}`;
+                for (const a of this.args) {
+                    argline += ' ';
+                    argline += options.windowsVerbatimArguments
+                        ? a
+                        : this._windowsQuoteCmdArg(a);
+                }
+                argline += '"';
+                return [argline];
+            }
+        }
+        return this.args;
+    }
+    _endsWith(str, end) {
+        return str.endsWith(end);
+    }
+    _isCmdFile() {
+        const upperToolPath = this.toolPath.toUpperCase();
+        return (this._endsWith(upperToolPath, '.CMD') ||
+            this._endsWith(upperToolPath, '.BAT'));
+    }
+    _windowsQuoteCmdArg(arg) {
+        // for .exe, apply the normal quoting rules that libuv applies
+        if (!this._isCmdFile()) {
+            return this._uvQuoteCmdArg(arg);
+        }
+        // otherwise apply quoting rules specific to the cmd.exe command line parser.
+        // the libuv rules are generic and are not designed specifically for cmd.exe
+        // command line parser.
+        //
+        // for a detailed description of the cmd.exe command line parser, refer to
+        // http://stackoverflow.com/questions/4094699/how-does-the-windows-command-interpreter-cmd-exe-parse-scripts/7970912#7970912
+        // need quotes for empty arg
+        if (!arg) {
+            return '""';
+        }
+        // determine whether the arg needs to be quoted
+        const cmdSpecialChars = [
+            ' ',
+            '\t',
+            '&',
+            '(',
+            ')',
+            '[',
+            ']',
+            '{',
+            '}',
+            '^',
+            '=',
+            ';',
+            '!',
+            "'",
+            '+',
+            ',',
+            '`',
+            '~',
+            '|',
+            '<',
+            '>',
+            '"'
+        ];
+        let needsQuotes = false;
+        for (const char of arg) {
+            if (cmdSpecialChars.some(x => x === char)) {
+                needsQuotes = true;
+                break;
+            }
+        }
+        // short-circuit if quotes not needed
+        if (!needsQuotes) {
+            return arg;
+        }
+        // the following quoting rules are very similar to the rules that by libuv applies.
+        //
+        // 1) wrap the string in quotes
+        //
+        // 2) double-up quotes - i.e. " => ""
+        //
+        //    this is different from the libuv quoting rules. libuv replaces " with \", which unfortunately
+        //    doesn't work well with a cmd.exe command line.
+        //
+        //    note, replacing " with "" also works well if the arg is passed to a downstream .NET console app.
+        //    for example, the command line:
+        //          foo.exe "myarg:""my val"""
+        //    is parsed by a .NET console app into an arg array:
+        //          [ "myarg:\"my val\"" ]
+        //    which is the same end result when applying libuv quoting rules. although the actual
+        //    command line from libuv quoting rules would look like:
+        //          foo.exe "myarg:\"my val\""
+        //
+        // 3) double-up slashes that precede a quote,
+        //    e.g.  hello \world    => "hello \world"
+        //          hello\"world    => "hello\\""world"
+        //          hello\\"world   => "hello\\\\""world"
+        //          hello world\    => "hello world\\"
+        //
+        //    technically this is not required for a cmd.exe command line, or the batch argument parser.
+        //    the reasons for including this as a .cmd quoting rule are:
+        //
+        //    a) this is optimized for the scenario where the argument is passed from the .cmd file to an
+        //       external program. many programs (e.g. .NET console apps) rely on the slash-doubling rule.
+        //
+        //    b) it's what we've been doing previously (by deferring to node default behavior) and we
+        //       haven't heard any complaints about that aspect.
+        //
+        // note, a weakness of the quoting rules chosen here, is that % is not escaped. in fact, % cannot be
+        // escaped when used on the command line directly - even though within a .cmd file % can be escaped
+        // by using %%.
+        //
+        // the saving grace is, on the command line, %var% is left as-is if var is not defined. this contrasts
+        // the line parsing rules within a .cmd file, where if var is not defined it is replaced with nothing.
+        //
+        // one option that was explored was replacing % with ^% - i.e. %var% => ^%var^%. this hack would
+        // often work, since it is unlikely that var^ would exist, and the ^ character is removed when the
+        // variable is used. the problem, however, is that ^ is not removed when %* is used to pass the args
+        // to an external program.
+        //
+        // an unexplored potential solution for the % escaping problem, is to create a wrapper .cmd file.
+        // % can be escaped within a .cmd file.
+        let reverse = '"';
+        let quoteHit = true;
+        for (let i = arg.length; i > 0; i--) {
+            // walk the string in reverse
+            reverse += arg[i - 1];
+            if (quoteHit && arg[i - 1] === '\\') {
+                reverse += '\\'; // double the slash
+            }
+            else if (arg[i - 1] === '"') {
+                quoteHit = true;
+                reverse += '"'; // double the quote
+            }
+            else {
+                quoteHit = false;
+            }
+        }
+        reverse += '"';
+        return reverse
+            .split('')
+            .reverse()
+            .join('');
+    }
+    _uvQuoteCmdArg(arg) {
+        // Tool runner wraps child_process.spawn() and needs to apply the same quoting as
+        // Node in certain cases where the undocumented spawn option windowsVerbatimArguments
+        // is used.
+        //
+        // Since this function is a port of quote_cmd_arg from Node 4.x (technically, lib UV,
+        // see https://github.com/nodejs/node/blob/v4.x/deps/uv/src/win/process.c for details),
+        // pasting copyright notice from Node within this function:
+        //
+        //      Copyright Joyent, Inc. and other Node contributors. All rights reserved.
+        //
+        //      Permission is hereby granted, free of charge, to any person obtaining a copy
+        //      of this software and associated documentation files (the "Software"), to
+        //      deal in the Software without restriction, including without limitation the
+        //      rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+        //      sell copies of the Software, and to permit persons to whom the Software is
+        //      furnished to do so, subject to the following conditions:
+        //
+        //      The above copyright notice and this permission notice shall be included in
+        //      all copies or substantial portions of the Software.
+        //
+        //      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+        //      IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+        //      FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+        //      AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+        //      LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+        //      FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+        //      IN THE SOFTWARE.
+        if (!arg) {
+            // Need double quotation for empty argument
+            return '""';
+        }
+        if (!arg.includes(' ') && !arg.includes('\t') && !arg.includes('"')) {
+            // No quotation needed
+            return arg;
+        }
+        if (!arg.includes('"') && !arg.includes('\\')) {
+            // No embedded double quotes or backslashes, so I can just wrap
+            // quote marks around the whole thing.
+            return `"${arg}"`;
+        }
+        // Expected input/output:
+        //   input : hello"world
+        //   output: "hello\"world"
+        //   input : hello""world
+        //   output: "hello\"\"world"
+        //   input : hello\world
+        //   output: hello\world
+        //   input : hello\\world
+        //   output: hello\\world
+        //   input : hello\"world
+        //   output: "hello\\\"world"
+        //   input : hello\\"world
+        //   output: "hello\\\\\"world"
+        //   input : hello world\
+        //   output: "hello world\\" - note the comment in libuv actually reads "hello world\"
+        //                             but it appears the comment is wrong, it should be "hello world\\"
+        let reverse = '"';
+        let quoteHit = true;
+        for (let i = arg.length; i > 0; i--) {
+            // walk the string in reverse
+            reverse += arg[i - 1];
+            if (quoteHit && arg[i - 1] === '\\') {
+                reverse += '\\';
+            }
+            else if (arg[i - 1] === '"') {
+                quoteHit = true;
+                reverse += '\\';
+            }
+            else {
+                quoteHit = false;
+            }
+        }
+        reverse += '"';
+        return reverse
+            .split('')
+            .reverse()
+            .join('');
+    }
+    _cloneExecOptions(options) {
+        options = options || {};
+        const result = {
+            cwd: options.cwd || process.cwd(),
+            env: options.env || process.env,
+            silent: options.silent || false,
+            windowsVerbatimArguments: options.windowsVerbatimArguments || false,
+            failOnStdErr: options.failOnStdErr || false,
+            ignoreReturnCode: options.ignoreReturnCode || false,
+            delay: options.delay || 10000
+        };
+        result.outStream = options.outStream || process.stdout;
+        result.errStream = options.errStream || process.stderr;
+        return result;
+    }
+    _getSpawnOptions(options, toolPath) {
+        options = options || {};
+        const result = {};
+        result.cwd = options.cwd;
+        result.env = options.env;
+        result['windowsVerbatimArguments'] =
+            options.windowsVerbatimArguments || this._isCmdFile();
+        if (options.windowsVerbatimArguments) {
+            result.argv0 = `"${toolPath}"`;
+        }
+        return result;
+    }
+    /**
+     * Exec a tool.
+     * Output will be streamed to the live console.
+     * Returns promise with return code
+     *
+     * @param     tool     path to tool to exec
+     * @param     options  optional exec options.  See ExecOptions
+     * @returns   number
+     */
+    exec() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // root the tool path if it is unrooted and contains relative pathing
+            if (!ioUtil.isRooted(this.toolPath) &&
+                (this.toolPath.includes('/') ||
+                    (IS_WINDOWS && this.toolPath.includes('\\')))) {
+                // prefer options.cwd if it is specified, however options.cwd may also need to be rooted
+                this.toolPath = path.resolve(process.cwd(), this.options.cwd || process.cwd(), this.toolPath);
+            }
+            // if the tool is only a file name, then resolve it from the PATH
+            // otherwise verify it exists (add extension on Windows if necessary)
+            this.toolPath = yield io.which(this.toolPath, true);
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                this._debug(`exec tool: ${this.toolPath}`);
+                this._debug('arguments:');
+                for (const arg of this.args) {
+                    this._debug(`   ${arg}`);
+                }
+                const optionsNonNull = this._cloneExecOptions(this.options);
+                if (!optionsNonNull.silent && optionsNonNull.outStream) {
+                    optionsNonNull.outStream.write(this._getCommandString(optionsNonNull) + os.EOL);
+                }
+                const state = new ExecState(optionsNonNull, this.toolPath);
+                state.on('debug', (message) => {
+                    this._debug(message);
+                });
+                if (this.options.cwd && !(yield ioUtil.exists(this.options.cwd))) {
+                    return reject(new Error(`The cwd: ${this.options.cwd} does not exist!`));
+                }
+                const fileName = this._getSpawnFileName();
+                const cp = child.spawn(fileName, this._getSpawnArgs(optionsNonNull), this._getSpawnOptions(this.options, fileName));
+                let stdbuffer = '';
+                if (cp.stdout) {
+                    cp.stdout.on('data', (data) => {
+                        if (this.options.listeners && this.options.listeners.stdout) {
+                            this.options.listeners.stdout(data);
+                        }
+                        if (!optionsNonNull.silent && optionsNonNull.outStream) {
+                            optionsNonNull.outStream.write(data);
+                        }
+                        stdbuffer = this._processLineBuffer(data, stdbuffer, (line) => {
+                            if (this.options.listeners && this.options.listeners.stdline) {
+                                this.options.listeners.stdline(line);
+                            }
+                        });
+                    });
+                }
+                let errbuffer = '';
+                if (cp.stderr) {
+                    cp.stderr.on('data', (data) => {
+                        state.processStderr = true;
+                        if (this.options.listeners && this.options.listeners.stderr) {
+                            this.options.listeners.stderr(data);
+                        }
+                        if (!optionsNonNull.silent &&
+                            optionsNonNull.errStream &&
+                            optionsNonNull.outStream) {
+                            const s = optionsNonNull.failOnStdErr
+                                ? optionsNonNull.errStream
+                                : optionsNonNull.outStream;
+                            s.write(data);
+                        }
+                        errbuffer = this._processLineBuffer(data, errbuffer, (line) => {
+                            if (this.options.listeners && this.options.listeners.errline) {
+                                this.options.listeners.errline(line);
+                            }
+                        });
+                    });
+                }
+                cp.on('error', (err) => {
+                    state.processError = err.message;
+                    state.processExited = true;
+                    state.processClosed = true;
+                    state.CheckComplete();
+                });
+                cp.on('exit', (code) => {
+                    state.processExitCode = code;
+                    state.processExited = true;
+                    this._debug(`Exit code ${code} received from tool '${this.toolPath}'`);
+                    state.CheckComplete();
+                });
+                cp.on('close', (code) => {
+                    state.processExitCode = code;
+                    state.processExited = true;
+                    state.processClosed = true;
+                    this._debug(`STDIO streams have closed for tool '${this.toolPath}'`);
+                    state.CheckComplete();
+                });
+                state.on('done', (error, exitCode) => {
+                    if (stdbuffer.length > 0) {
+                        this.emit('stdline', stdbuffer);
+                    }
+                    if (errbuffer.length > 0) {
+                        this.emit('errline', errbuffer);
+                    }
+                    cp.removeAllListeners();
+                    if (error) {
+                        reject(error);
+                    }
+                    else {
+                        resolve(exitCode);
+                    }
+                });
+                if (this.options.input) {
+                    if (!cp.stdin) {
+                        throw new Error('child process missing stdin');
+                    }
+                    cp.stdin.end(this.options.input);
+                }
+            }));
+        });
+    }
+}
+exports.ToolRunner = ToolRunner;
+/**
+ * Convert an arg string to an array of args. Handles escaping
+ *
+ * @param    argString   string of arguments
+ * @returns  string[]    array of arguments
+ */
+function argStringToArray(argString) {
+    const args = [];
+    let inQuotes = false;
+    let escaped = false;
+    let arg = '';
+    function append(c) {
+        // we only escape double quotes.
+        if (escaped && c !== '"') {
+            arg += '\\';
+        }
+        arg += c;
+        escaped = false;
+    }
+    for (let i = 0; i < argString.length; i++) {
+        const c = argString.charAt(i);
+        if (c === '"') {
+            if (!escaped) {
+                inQuotes = !inQuotes;
+            }
+            else {
+                append(c);
+            }
+            continue;
+        }
+        if (c === '\\' && escaped) {
+            append(c);
+            continue;
+        }
+        if (c === '\\' && inQuotes) {
+            escaped = true;
+            continue;
+        }
+        if (c === ' ' && !inQuotes) {
+            if (arg.length > 0) {
+                args.push(arg);
+                arg = '';
+            }
+            continue;
+        }
+        append(c);
+    }
+    if (arg.length > 0) {
+        args.push(arg.trim());
+    }
+    return args;
+}
+exports.argStringToArray = argStringToArray;
+class ExecState extends events.EventEmitter {
+    constructor(options, toolPath) {
+        super();
+        this.processClosed = false; // tracks whether the process has exited and stdio is closed
+        this.processError = '';
+        this.processExitCode = 0;
+        this.processExited = false; // tracks whether the process has exited
+        this.processStderr = false; // tracks whether stderr was written to
+        this.delay = 10000; // 10 seconds
+        this.done = false;
+        this.timeout = null;
+        if (!toolPath) {
+            throw new Error('toolPath must not be empty');
+        }
+        this.options = options;
+        this.toolPath = toolPath;
+        if (options.delay) {
+            this.delay = options.delay;
+        }
+    }
+    CheckComplete() {
+        if (this.done) {
+            return;
+        }
+        if (this.processClosed) {
+            this._setResult();
+        }
+        else if (this.processExited) {
+            this.timeout = timers_1.setTimeout(ExecState.HandleTimeout, this.delay, this);
+        }
+    }
+    _debug(message) {
+        this.emit('debug', message);
+    }
+    _setResult() {
+        // determine whether there is an error
+        let error;
+        if (this.processExited) {
+            if (this.processError) {
+                error = new Error(`There was an error when attempting to execute the process '${this.toolPath}'. This may indicate the process failed to start. Error: ${this.processError}`);
+            }
+            else if (this.processExitCode !== 0 && !this.options.ignoreReturnCode) {
+                error = new Error(`The process '${this.toolPath}' failed with exit code ${this.processExitCode}`);
+            }
+            else if (this.processStderr && this.options.failOnStdErr) {
+                error = new Error(`The process '${this.toolPath}' failed because one or more lines were written to the STDERR stream`);
+            }
+        }
+        // clear the timeout
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+            this.timeout = null;
+        }
+        this.done = true;
+        this.emit('done', error, this.processExitCode);
+    }
+    static HandleTimeout(state) {
+        if (state.done) {
+            return;
+        }
+        if (!state.processClosed && state.processExited) {
+            const message = `The STDIO streams did not close within ${state.delay /
+                1000} seconds of the exit event from process '${state.toolPath}'. This may indicate a child process inherited the STDIO streams and has not yet exited.`;
+            state._debug(message);
+        }
+        state._setResult();
+    }
+}
+//# sourceMappingURL=toolrunner.js.map
+
+/***/ }),
+
 /***/ 35526:
 /***/ (function(__unused_webpack_module, exports) {
 
@@ -1978,6 +3391,502 @@ function isLoopbackAddress(host) {
         hostLower.startsWith('[0:0:0:0:0:0:0:1]'));
 }
 //# sourceMappingURL=proxy.js.map
+
+/***/ }),
+
+/***/ 81962:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getCmdPath = exports.tryGetExecutablePath = exports.isRooted = exports.isDirectory = exports.exists = exports.READONLY = exports.UV_FS_O_EXLOCK = exports.IS_WINDOWS = exports.unlink = exports.symlink = exports.stat = exports.rmdir = exports.rm = exports.rename = exports.readlink = exports.readdir = exports.open = exports.mkdir = exports.lstat = exports.copyFile = exports.chmod = void 0;
+const fs = __importStar(__nccwpck_require__(57147));
+const path = __importStar(__nccwpck_require__(71017));
+_a = fs.promises
+// export const {open} = 'fs'
+, exports.chmod = _a.chmod, exports.copyFile = _a.copyFile, exports.lstat = _a.lstat, exports.mkdir = _a.mkdir, exports.open = _a.open, exports.readdir = _a.readdir, exports.readlink = _a.readlink, exports.rename = _a.rename, exports.rm = _a.rm, exports.rmdir = _a.rmdir, exports.stat = _a.stat, exports.symlink = _a.symlink, exports.unlink = _a.unlink;
+// export const {open} = 'fs'
+exports.IS_WINDOWS = process.platform === 'win32';
+// See https://github.com/nodejs/node/blob/d0153aee367422d0858105abec186da4dff0a0c5/deps/uv/include/uv/win.h#L691
+exports.UV_FS_O_EXLOCK = 0x10000000;
+exports.READONLY = fs.constants.O_RDONLY;
+function exists(fsPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            yield exports.stat(fsPath);
+        }
+        catch (err) {
+            if (err.code === 'ENOENT') {
+                return false;
+            }
+            throw err;
+        }
+        return true;
+    });
+}
+exports.exists = exists;
+function isDirectory(fsPath, useStat = false) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const stats = useStat ? yield exports.stat(fsPath) : yield exports.lstat(fsPath);
+        return stats.isDirectory();
+    });
+}
+exports.isDirectory = isDirectory;
+/**
+ * On OSX/Linux, true if path starts with '/'. On Windows, true for paths like:
+ * \, \hello, \\hello\share, C:, and C:\hello (and corresponding alternate separator cases).
+ */
+function isRooted(p) {
+    p = normalizeSeparators(p);
+    if (!p) {
+        throw new Error('isRooted() parameter "p" cannot be empty');
+    }
+    if (exports.IS_WINDOWS) {
+        return (p.startsWith('\\') || /^[A-Z]:/i.test(p) // e.g. \ or \hello or \\hello
+        ); // e.g. C: or C:\hello
+    }
+    return p.startsWith('/');
+}
+exports.isRooted = isRooted;
+/**
+ * Best effort attempt to determine whether a file exists and is executable.
+ * @param filePath    file path to check
+ * @param extensions  additional file extensions to try
+ * @return if file exists and is executable, returns the file path. otherwise empty string.
+ */
+function tryGetExecutablePath(filePath, extensions) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let stats = undefined;
+        try {
+            // test file exists
+            stats = yield exports.stat(filePath);
+        }
+        catch (err) {
+            if (err.code !== 'ENOENT') {
+                // eslint-disable-next-line no-console
+                console.log(`Unexpected error attempting to determine if executable file exists '${filePath}': ${err}`);
+            }
+        }
+        if (stats && stats.isFile()) {
+            if (exports.IS_WINDOWS) {
+                // on Windows, test for valid extension
+                const upperExt = path.extname(filePath).toUpperCase();
+                if (extensions.some(validExt => validExt.toUpperCase() === upperExt)) {
+                    return filePath;
+                }
+            }
+            else {
+                if (isUnixExecutable(stats)) {
+                    return filePath;
+                }
+            }
+        }
+        // try each extension
+        const originalFilePath = filePath;
+        for (const extension of extensions) {
+            filePath = originalFilePath + extension;
+            stats = undefined;
+            try {
+                stats = yield exports.stat(filePath);
+            }
+            catch (err) {
+                if (err.code !== 'ENOENT') {
+                    // eslint-disable-next-line no-console
+                    console.log(`Unexpected error attempting to determine if executable file exists '${filePath}': ${err}`);
+                }
+            }
+            if (stats && stats.isFile()) {
+                if (exports.IS_WINDOWS) {
+                    // preserve the case of the actual file (since an extension was appended)
+                    try {
+                        const directory = path.dirname(filePath);
+                        const upperName = path.basename(filePath).toUpperCase();
+                        for (const actualName of yield exports.readdir(directory)) {
+                            if (upperName === actualName.toUpperCase()) {
+                                filePath = path.join(directory, actualName);
+                                break;
+                            }
+                        }
+                    }
+                    catch (err) {
+                        // eslint-disable-next-line no-console
+                        console.log(`Unexpected error attempting to determine the actual case of the file '${filePath}': ${err}`);
+                    }
+                    return filePath;
+                }
+                else {
+                    if (isUnixExecutable(stats)) {
+                        return filePath;
+                    }
+                }
+            }
+        }
+        return '';
+    });
+}
+exports.tryGetExecutablePath = tryGetExecutablePath;
+function normalizeSeparators(p) {
+    p = p || '';
+    if (exports.IS_WINDOWS) {
+        // convert slashes on Windows
+        p = p.replace(/\//g, '\\');
+        // remove redundant slashes
+        return p.replace(/\\\\+/g, '\\');
+    }
+    // remove redundant slashes
+    return p.replace(/\/\/+/g, '/');
+}
+// on Mac/Linux, test the execute bit
+//     R   W  X  R  W X R W X
+//   256 128 64 32 16 8 4 2 1
+function isUnixExecutable(stats) {
+    return ((stats.mode & 1) > 0 ||
+        ((stats.mode & 8) > 0 && stats.gid === process.getgid()) ||
+        ((stats.mode & 64) > 0 && stats.uid === process.getuid()));
+}
+// Get the path of cmd.exe in windows
+function getCmdPath() {
+    var _a;
+    return (_a = process.env['COMSPEC']) !== null && _a !== void 0 ? _a : `cmd.exe`;
+}
+exports.getCmdPath = getCmdPath;
+//# sourceMappingURL=io-util.js.map
+
+/***/ }),
+
+/***/ 47351:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.findInPath = exports.which = exports.mkdirP = exports.rmRF = exports.mv = exports.cp = void 0;
+const assert_1 = __nccwpck_require__(39491);
+const path = __importStar(__nccwpck_require__(71017));
+const ioUtil = __importStar(__nccwpck_require__(81962));
+/**
+ * Copies a file or folder.
+ * Based off of shelljs - https://github.com/shelljs/shelljs/blob/9237f66c52e5daa40458f94f9565e18e8132f5a6/src/cp.js
+ *
+ * @param     source    source path
+ * @param     dest      destination path
+ * @param     options   optional. See CopyOptions.
+ */
+function cp(source, dest, options = {}) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { force, recursive, copySourceDirectory } = readCopyOptions(options);
+        const destStat = (yield ioUtil.exists(dest)) ? yield ioUtil.stat(dest) : null;
+        // Dest is an existing file, but not forcing
+        if (destStat && destStat.isFile() && !force) {
+            return;
+        }
+        // If dest is an existing directory, should copy inside.
+        const newDest = destStat && destStat.isDirectory() && copySourceDirectory
+            ? path.join(dest, path.basename(source))
+            : dest;
+        if (!(yield ioUtil.exists(source))) {
+            throw new Error(`no such file or directory: ${source}`);
+        }
+        const sourceStat = yield ioUtil.stat(source);
+        if (sourceStat.isDirectory()) {
+            if (!recursive) {
+                throw new Error(`Failed to copy. ${source} is a directory, but tried to copy without recursive flag.`);
+            }
+            else {
+                yield cpDirRecursive(source, newDest, 0, force);
+            }
+        }
+        else {
+            if (path.relative(source, newDest) === '') {
+                // a file cannot be copied to itself
+                throw new Error(`'${newDest}' and '${source}' are the same file`);
+            }
+            yield copyFile(source, newDest, force);
+        }
+    });
+}
+exports.cp = cp;
+/**
+ * Moves a path.
+ *
+ * @param     source    source path
+ * @param     dest      destination path
+ * @param     options   optional. See MoveOptions.
+ */
+function mv(source, dest, options = {}) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (yield ioUtil.exists(dest)) {
+            let destExists = true;
+            if (yield ioUtil.isDirectory(dest)) {
+                // If dest is directory copy src into dest
+                dest = path.join(dest, path.basename(source));
+                destExists = yield ioUtil.exists(dest);
+            }
+            if (destExists) {
+                if (options.force == null || options.force) {
+                    yield rmRF(dest);
+                }
+                else {
+                    throw new Error('Destination already exists');
+                }
+            }
+        }
+        yield mkdirP(path.dirname(dest));
+        yield ioUtil.rename(source, dest);
+    });
+}
+exports.mv = mv;
+/**
+ * Remove a path recursively with force
+ *
+ * @param inputPath path to remove
+ */
+function rmRF(inputPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (ioUtil.IS_WINDOWS) {
+            // Check for invalid characters
+            // https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+            if (/[*"<>|]/.test(inputPath)) {
+                throw new Error('File path must not contain `*`, `"`, `<`, `>` or `|` on Windows');
+            }
+        }
+        try {
+            // note if path does not exist, error is silent
+            yield ioUtil.rm(inputPath, {
+                force: true,
+                maxRetries: 3,
+                recursive: true,
+                retryDelay: 300
+            });
+        }
+        catch (err) {
+            throw new Error(`File was unable to be removed ${err}`);
+        }
+    });
+}
+exports.rmRF = rmRF;
+/**
+ * Make a directory.  Creates the full path with folders in between
+ * Will throw if it fails
+ *
+ * @param   fsPath        path to create
+ * @returns Promise<void>
+ */
+function mkdirP(fsPath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        assert_1.ok(fsPath, 'a path argument must be provided');
+        yield ioUtil.mkdir(fsPath, { recursive: true });
+    });
+}
+exports.mkdirP = mkdirP;
+/**
+ * Returns path of a tool had the tool actually been invoked.  Resolves via paths.
+ * If you check and the tool does not exist, it will throw.
+ *
+ * @param     tool              name of the tool
+ * @param     check             whether to check if tool exists
+ * @returns   Promise<string>   path to tool
+ */
+function which(tool, check) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!tool) {
+            throw new Error("parameter 'tool' is required");
+        }
+        // recursive when check=true
+        if (check) {
+            const result = yield which(tool, false);
+            if (!result) {
+                if (ioUtil.IS_WINDOWS) {
+                    throw new Error(`Unable to locate executable file: ${tool}. Please verify either the file path exists or the file can be found within a directory specified by the PATH environment variable. Also verify the file has a valid extension for an executable file.`);
+                }
+                else {
+                    throw new Error(`Unable to locate executable file: ${tool}. Please verify either the file path exists or the file can be found within a directory specified by the PATH environment variable. Also check the file mode to verify the file is executable.`);
+                }
+            }
+            return result;
+        }
+        const matches = yield findInPath(tool);
+        if (matches && matches.length > 0) {
+            return matches[0];
+        }
+        return '';
+    });
+}
+exports.which = which;
+/**
+ * Returns a list of all occurrences of the given tool on the system path.
+ *
+ * @returns   Promise<string[]>  the paths of the tool
+ */
+function findInPath(tool) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!tool) {
+            throw new Error("parameter 'tool' is required");
+        }
+        // build the list of extensions to try
+        const extensions = [];
+        if (ioUtil.IS_WINDOWS && process.env['PATHEXT']) {
+            for (const extension of process.env['PATHEXT'].split(path.delimiter)) {
+                if (extension) {
+                    extensions.push(extension);
+                }
+            }
+        }
+        // if it's rooted, return it if exists. otherwise return empty.
+        if (ioUtil.isRooted(tool)) {
+            const filePath = yield ioUtil.tryGetExecutablePath(tool, extensions);
+            if (filePath) {
+                return [filePath];
+            }
+            return [];
+        }
+        // if any path separators, return empty
+        if (tool.includes(path.sep)) {
+            return [];
+        }
+        // build the list of directories
+        //
+        // Note, technically "where" checks the current directory on Windows. From a toolkit perspective,
+        // it feels like we should not do this. Checking the current directory seems like more of a use
+        // case of a shell, and the which() function exposed by the toolkit should strive for consistency
+        // across platforms.
+        const directories = [];
+        if (process.env.PATH) {
+            for (const p of process.env.PATH.split(path.delimiter)) {
+                if (p) {
+                    directories.push(p);
+                }
+            }
+        }
+        // find all matches
+        const matches = [];
+        for (const directory of directories) {
+            const filePath = yield ioUtil.tryGetExecutablePath(path.join(directory, tool), extensions);
+            if (filePath) {
+                matches.push(filePath);
+            }
+        }
+        return matches;
+    });
+}
+exports.findInPath = findInPath;
+function readCopyOptions(options) {
+    const force = options.force == null ? true : options.force;
+    const recursive = Boolean(options.recursive);
+    const copySourceDirectory = options.copySourceDirectory == null
+        ? true
+        : Boolean(options.copySourceDirectory);
+    return { force, recursive, copySourceDirectory };
+}
+function cpDirRecursive(sourceDir, destDir, currentDepth, force) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Ensure there is not a run away recursive copy
+        if (currentDepth >= 255)
+            return;
+        currentDepth++;
+        yield mkdirP(destDir);
+        const files = yield ioUtil.readdir(sourceDir);
+        for (const fileName of files) {
+            const srcFile = `${sourceDir}/${fileName}`;
+            const destFile = `${destDir}/${fileName}`;
+            const srcFileStat = yield ioUtil.lstat(srcFile);
+            if (srcFileStat.isDirectory()) {
+                // Recurse
+                yield cpDirRecursive(srcFile, destFile, currentDepth, force);
+            }
+            else {
+                yield copyFile(srcFile, destFile, force);
+            }
+        }
+        // Change the mode for the newly created directory
+        yield ioUtil.chmod(destDir, (yield ioUtil.stat(sourceDir)).mode);
+    });
+}
+// Buffered file copy
+function copyFile(srcFile, destFile, force) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if ((yield ioUtil.lstat(srcFile)).isSymbolicLink()) {
+            // unlink/re-link it
+            try {
+                yield ioUtil.lstat(destFile);
+                yield ioUtil.unlink(destFile);
+            }
+            catch (e) {
+                // Try to override file permission
+                if (e.code === 'EPERM') {
+                    yield ioUtil.chmod(destFile, '0666');
+                    yield ioUtil.unlink(destFile);
+                }
+                // other errors = it doesn't exist, no work to do
+            }
+            // Copy over symlink
+            const symlinkFull = yield ioUtil.readlink(srcFile);
+            yield ioUtil.symlink(symlinkFull, destFile, ioUtil.IS_WINDOWS ? 'junction' : null);
+        }
+        else if (!(yield ioUtil.exists(destFile)) || force) {
+            yield ioUtil.copyFile(srcFile, destFile);
+        }
+    });
+}
+//# sourceMappingURL=io.js.map
 
 /***/ }),
 
@@ -30465,6 +32374,213 @@ module.exports = ZStream;
 
 /***/ }),
 
+/***/ 55711:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+module.exports = __nccwpck_require__(6113).randomBytes
+
+
+/***/ }),
+
+/***/ 5581:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+module.exports = __nccwpck_require__(57375);
+
+/***/ }),
+
+/***/ 19376:
+/***/ ((module, exports) => {
+
+function Charset() {
+  this.chars = '';
+}
+
+Charset.prototype.setType = function(type) {
+  if (Array.isArray(type)) {
+    for (var i=0; i < type.length; i++) {
+      this.chars += this.getCharacters(type[i]);
+    }
+  }
+  else {
+    this.chars = this.getCharacters(type);
+  }
+}
+
+Charset.prototype.getCharacters = function(type) {
+  var chars;
+
+  var numbers     = '0123456789';
+  var charsLower  = 'abcdefghijklmnopqrstuvwxyz';
+  var charsUpper  = charsLower.toUpperCase();
+  var hexChars    = 'abcdef';
+  var binaryChars = '01';
+  var octalChars  = '01234567';
+
+  if (type === 'alphanumeric') {
+    chars = numbers + charsLower + charsUpper;
+  }
+  else if (type === 'numeric') {
+    chars = numbers;
+  }
+  else if (type === 'alphabetic') {
+    chars = charsLower + charsUpper;
+  }
+  else if (type === 'hex') {
+    chars = numbers + hexChars;
+  }
+  else if (type === 'binary') {
+    chars = binaryChars;
+  }
+  else if (type === 'octal') {
+    chars = octalChars;
+  }
+  else {
+    chars = type;
+  }
+
+  return chars;
+}
+
+Charset.prototype.removeUnreadable = function() {
+  var unreadableChars = /[0OIl]/g;
+  this.chars = this.chars.replace(unreadableChars, '');
+}
+
+Charset.prototype.setcapitalization = function(capitalization) {
+  if (capitalization === 'uppercase') {
+    this.chars = this.chars.toUpperCase();
+  }
+  else if (capitalization === 'lowercase') {
+    this.chars = this.chars.toLowerCase();
+  }
+}
+
+Charset.prototype.removeDuplicates = function() {
+  var charMap = this.chars.split('');
+  charMap = [...new Set(charMap)];
+  this.chars = charMap.join('');
+}
+
+module.exports = exports = Charset;
+
+
+/***/ }),
+
+/***/ 57375:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var randomBytes = __nccwpck_require__(55711);
+var Charset = __nccwpck_require__(19376);
+
+
+function unsafeRandomBytes(length) {
+  var stack = [];
+  for (var i = 0; i < length; i++) {
+    stack.push(Math.floor(Math.random() * 255));
+  }
+
+  return {
+    length,
+    readUInt8: function (index) {
+      return stack[index];
+    }
+  };
+}
+
+function safeRandomBytes(length) {
+  try {
+    return randomBytes(length);
+  } catch (e) {
+    /* React/React Native Fix + Eternal loop removed */
+    return unsafeRandomBytes(length);
+  }
+}
+
+function processString(buf, initialString, chars, reqLen, maxByte) {
+  var string = initialString;
+  for (var i = 0; i < buf.length && string.length < reqLen; i++) {
+    var randomByte = buf.readUInt8(i);
+    if (randomByte < maxByte) {
+      string += chars.charAt(randomByte % chars.length);
+    }
+  }
+  return string;
+}
+
+function getAsyncString(string, chars, length, maxByte, cb) {
+  randomBytes(length, function(err, buf) {
+    if (err) {
+      // Since it is waiting for entropy, errors are legit and we shouldn't just keep retrying
+      cb(err);
+    }
+    var generatedString = processString(buf, string, chars, length, maxByte);
+    if (generatedString.length < length) {
+      getAsyncString(generatedString, chars, length, maxByte, cb);
+    } else {
+      cb(null, generatedString);
+    }
+  })
+}
+
+exports.generate = function(options, cb) {
+  var charset = new Charset();
+
+  var length, chars, capitalization, string = '';
+
+  // Handle options
+  if (typeof options === 'object') {
+    length = typeof options.length === 'number' ? options.length : 32;
+
+    if (options.charset) {
+      charset.setType(options.charset);
+    }
+    else {
+      charset.setType('alphanumeric');
+    }
+
+    if (options.capitalization) {
+      charset.setcapitalization(options.capitalization);
+    }
+
+    if (options.readable) {
+      charset.removeUnreadable();
+    }
+
+    charset.removeDuplicates();
+  }
+  else if (typeof options === 'number') {
+    length = options;
+    charset.setType('alphanumeric');
+  }
+  else {
+    length = 32;
+    charset.setType('alphanumeric');
+  }
+
+  // Generate the string
+  var charsLen = charset.chars.length;
+  var maxByte = 256 - (256 % charsLen);
+
+  if (!cb) {
+    while (string.length < length) {
+      var buf = safeRandomBytes(Math.ceil(length * 256 / maxByte));
+      string = processString(buf, string, charset.chars, length, maxByte);
+    }
+
+    return string;
+  }
+
+  getAsyncString(string, charset.chars, length, maxByte, cb);
+
+};
+
+
+/***/ }),
+
 /***/ 23770:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -31481,6 +33597,855 @@ async function reportCompatibilityResultByAppId(vendorPortalApi, appId, releaseS
     // discard the response body
     await res.readBody();
 }
+
+
+/***/ }),
+
+/***/ 68065:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { promisify } = __nccwpck_require__(73837);
+const tmp = __nccwpck_require__(8517);
+
+// file
+module.exports.fileSync = tmp.fileSync;
+const fileWithOptions = promisify((options, cb) =>
+  tmp.file(options, (err, path, fd, cleanup) =>
+    err ? cb(err) : cb(undefined, { path, fd, cleanup: promisify(cleanup) })
+  )
+);
+module.exports.file = async (options) => fileWithOptions(options);
+
+module.exports.withFile = async function withFile(fn, options) {
+  const { path, fd, cleanup } = await module.exports.file(options);
+  try {
+    return await fn({ path, fd });
+  } finally {
+    await cleanup();
+  }
+};
+
+
+// directory
+module.exports.dirSync = tmp.dirSync;
+const dirWithOptions = promisify((options, cb) =>
+  tmp.dir(options, (err, path, cleanup) =>
+    err ? cb(err) : cb(undefined, { path, cleanup: promisify(cleanup) })
+  )
+);
+module.exports.dir = async (options) => dirWithOptions(options);
+
+module.exports.withDir = async function withDir(fn, options) {
+  const { path, cleanup } = await module.exports.dir(options);
+  try {
+    return await fn({ path });
+  } finally {
+    await cleanup();
+  }
+};
+
+
+// name generation
+module.exports.tmpNameSync = tmp.tmpNameSync;
+module.exports.tmpName = promisify(tmp.tmpName);
+
+module.exports.tmpdir = tmp.tmpdir;
+
+module.exports.setGracefulCleanup = tmp.setGracefulCleanup;
+
+
+/***/ }),
+
+/***/ 8517:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+/*!
+ * Tmp
+ *
+ * Copyright (c) 2011-2017 KARASZI Istvan <github@spam.raszi.hu>
+ *
+ * MIT Licensed
+ */
+
+/*
+ * Module dependencies.
+ */
+const fs = __nccwpck_require__(57147);
+const os = __nccwpck_require__(22037);
+const path = __nccwpck_require__(71017);
+const crypto = __nccwpck_require__(6113);
+const _c = { fs: fs.constants, os: os.constants };
+
+/*
+ * The working inner variables.
+ */
+const
+  // the random characters to choose from
+  RANDOM_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+
+  TEMPLATE_PATTERN = /XXXXXX/,
+
+  DEFAULT_TRIES = 3,
+
+  CREATE_FLAGS = (_c.O_CREAT || _c.fs.O_CREAT) | (_c.O_EXCL || _c.fs.O_EXCL) | (_c.O_RDWR || _c.fs.O_RDWR),
+
+  // constants are off on the windows platform and will not match the actual errno codes
+  IS_WIN32 = os.platform() === 'win32',
+  EBADF = _c.EBADF || _c.os.errno.EBADF,
+  ENOENT = _c.ENOENT || _c.os.errno.ENOENT,
+
+  DIR_MODE = 0o700 /* 448 */,
+  FILE_MODE = 0o600 /* 384 */,
+
+  EXIT = 'exit',
+
+  // this will hold the objects need to be removed on exit
+  _removeObjects = [],
+
+  // API change in fs.rmdirSync leads to error when passing in a second parameter, e.g. the callback
+  FN_RMDIR_SYNC = fs.rmdirSync.bind(fs);
+
+let
+  _gracefulCleanup = false;
+
+/**
+ * Recursively remove a directory and its contents.
+ *
+ * @param {string} dirPath path of directory to remove
+ * @param {Function} callback
+ * @private
+ */
+function rimraf(dirPath, callback) {
+  return fs.rm(dirPath, { recursive: true }, callback);
+}
+
+/**
+ * Recursively remove a directory and its contents, synchronously.
+ *
+ * @param {string} dirPath path of directory to remove
+ * @private
+ */
+function FN_RIMRAF_SYNC(dirPath) {
+  return fs.rmSync(dirPath, { recursive: true });
+}
+
+/**
+ * Gets a temporary file name.
+ *
+ * @param {(Options|tmpNameCallback)} options options or callback
+ * @param {?tmpNameCallback} callback the callback function
+ */
+function tmpName(options, callback) {
+  const
+    args = _parseArguments(options, callback),
+    opts = args[0],
+    cb = args[1];
+
+  try {
+    _assertAndSanitizeOptions(opts);
+  } catch (err) {
+    return cb(err);
+  }
+
+  let tries = opts.tries;
+  (function _getUniqueName() {
+    try {
+      const name = _generateTmpName(opts);
+
+      // check whether the path exists then retry if needed
+      fs.stat(name, function (err) {
+        /* istanbul ignore else */
+        if (!err) {
+          /* istanbul ignore else */
+          if (tries-- > 0) return _getUniqueName();
+
+          return cb(new Error('Could not get a unique tmp filename, max tries reached ' + name));
+        }
+
+        cb(null, name);
+      });
+    } catch (err) {
+      cb(err);
+    }
+  }());
+}
+
+/**
+ * Synchronous version of tmpName.
+ *
+ * @param {Object} options
+ * @returns {string} the generated random name
+ * @throws {Error} if the options are invalid or could not generate a filename
+ */
+function tmpNameSync(options) {
+  const
+    args = _parseArguments(options),
+    opts = args[0];
+
+  _assertAndSanitizeOptions(opts);
+
+  let tries = opts.tries;
+  do {
+    const name = _generateTmpName(opts);
+    try {
+      fs.statSync(name);
+    } catch (e) {
+      return name;
+    }
+  } while (tries-- > 0);
+
+  throw new Error('Could not get a unique tmp filename, max tries reached');
+}
+
+/**
+ * Creates and opens a temporary file.
+ *
+ * @param {(Options|null|undefined|fileCallback)} options the config options or the callback function or null or undefined
+ * @param {?fileCallback} callback
+ */
+function file(options, callback) {
+  const
+    args = _parseArguments(options, callback),
+    opts = args[0],
+    cb = args[1];
+
+  // gets a temporary filename
+  tmpName(opts, function _tmpNameCreated(err, name) {
+    /* istanbul ignore else */
+    if (err) return cb(err);
+
+    // create and open the file
+    fs.open(name, CREATE_FLAGS, opts.mode || FILE_MODE, function _fileCreated(err, fd) {
+      /* istanbu ignore else */
+      if (err) return cb(err);
+
+      if (opts.discardDescriptor) {
+        return fs.close(fd, function _discardCallback(possibleErr) {
+          // the chance of getting an error on close here is rather low and might occur in the most edgiest cases only
+          return cb(possibleErr, name, undefined, _prepareTmpFileRemoveCallback(name, -1, opts, false));
+        });
+      } else {
+        // detachDescriptor passes the descriptor whereas discardDescriptor closes it, either way, we no longer care
+        // about the descriptor
+        const discardOrDetachDescriptor = opts.discardDescriptor || opts.detachDescriptor;
+        cb(null, name, fd, _prepareTmpFileRemoveCallback(name, discardOrDetachDescriptor ? -1 : fd, opts, false));
+      }
+    });
+  });
+}
+
+/**
+ * Synchronous version of file.
+ *
+ * @param {Options} options
+ * @returns {FileSyncObject} object consists of name, fd and removeCallback
+ * @throws {Error} if cannot create a file
+ */
+function fileSync(options) {
+  const
+    args = _parseArguments(options),
+    opts = args[0];
+
+  const discardOrDetachDescriptor = opts.discardDescriptor || opts.detachDescriptor;
+  const name = tmpNameSync(opts);
+  var fd = fs.openSync(name, CREATE_FLAGS, opts.mode || FILE_MODE);
+  /* istanbul ignore else */
+  if (opts.discardDescriptor) {
+    fs.closeSync(fd);
+    fd = undefined;
+  }
+
+  return {
+    name: name,
+    fd: fd,
+    removeCallback: _prepareTmpFileRemoveCallback(name, discardOrDetachDescriptor ? -1 : fd, opts, true)
+  };
+}
+
+/**
+ * Creates a temporary directory.
+ *
+ * @param {(Options|dirCallback)} options the options or the callback function
+ * @param {?dirCallback} callback
+ */
+function dir(options, callback) {
+  const
+    args = _parseArguments(options, callback),
+    opts = args[0],
+    cb = args[1];
+
+  // gets a temporary filename
+  tmpName(opts, function _tmpNameCreated(err, name) {
+    /* istanbul ignore else */
+    if (err) return cb(err);
+
+    // create the directory
+    fs.mkdir(name, opts.mode || DIR_MODE, function _dirCreated(err) {
+      /* istanbul ignore else */
+      if (err) return cb(err);
+
+      cb(null, name, _prepareTmpDirRemoveCallback(name, opts, false));
+    });
+  });
+}
+
+/**
+ * Synchronous version of dir.
+ *
+ * @param {Options} options
+ * @returns {DirSyncObject} object consists of name and removeCallback
+ * @throws {Error} if it cannot create a directory
+ */
+function dirSync(options) {
+  const
+    args = _parseArguments(options),
+    opts = args[0];
+
+  const name = tmpNameSync(opts);
+  fs.mkdirSync(name, opts.mode || DIR_MODE);
+
+  return {
+    name: name,
+    removeCallback: _prepareTmpDirRemoveCallback(name, opts, true)
+  };
+}
+
+/**
+ * Removes files asynchronously.
+ *
+ * @param {Object} fdPath
+ * @param {Function} next
+ * @private
+ */
+function _removeFileAsync(fdPath, next) {
+  const _handler = function (err) {
+    if (err && !_isENOENT(err)) {
+      // reraise any unanticipated error
+      return next(err);
+    }
+    next();
+  };
+
+  if (0 <= fdPath[0])
+    fs.close(fdPath[0], function () {
+      fs.unlink(fdPath[1], _handler);
+    });
+  else fs.unlink(fdPath[1], _handler);
+}
+
+/**
+ * Removes files synchronously.
+ *
+ * @param {Object} fdPath
+ * @private
+ */
+function _removeFileSync(fdPath) {
+  let rethrownException = null;
+  try {
+    if (0 <= fdPath[0]) fs.closeSync(fdPath[0]);
+  } catch (e) {
+    // reraise any unanticipated error
+    if (!_isEBADF(e) && !_isENOENT(e)) throw e;
+  } finally {
+    try {
+      fs.unlinkSync(fdPath[1]);
+    }
+    catch (e) {
+      // reraise any unanticipated error
+      if (!_isENOENT(e)) rethrownException = e;
+    }
+  }
+  if (rethrownException !== null) {
+    throw rethrownException;
+  }
+}
+
+/**
+ * Prepares the callback for removal of the temporary file.
+ *
+ * Returns either a sync callback or a async callback depending on whether
+ * fileSync or file was called, which is expressed by the sync parameter.
+ *
+ * @param {string} name the path of the file
+ * @param {number} fd file descriptor
+ * @param {Object} opts
+ * @param {boolean} sync
+ * @returns {fileCallback | fileCallbackSync}
+ * @private
+ */
+function _prepareTmpFileRemoveCallback(name, fd, opts, sync) {
+  const removeCallbackSync = _prepareRemoveCallback(_removeFileSync, [fd, name], sync);
+  const removeCallback = _prepareRemoveCallback(_removeFileAsync, [fd, name], sync, removeCallbackSync);
+
+  if (!opts.keep) _removeObjects.unshift(removeCallbackSync);
+
+  return sync ? removeCallbackSync : removeCallback;
+}
+
+/**
+ * Prepares the callback for removal of the temporary directory.
+ *
+ * Returns either a sync callback or a async callback depending on whether
+ * tmpFileSync or tmpFile was called, which is expressed by the sync parameter.
+ *
+ * @param {string} name
+ * @param {Object} opts
+ * @param {boolean} sync
+ * @returns {Function} the callback
+ * @private
+ */
+function _prepareTmpDirRemoveCallback(name, opts, sync) {
+  const removeFunction = opts.unsafeCleanup ? rimraf : fs.rmdir.bind(fs);
+  const removeFunctionSync = opts.unsafeCleanup ? FN_RIMRAF_SYNC : FN_RMDIR_SYNC;
+  const removeCallbackSync = _prepareRemoveCallback(removeFunctionSync, name, sync);
+  const removeCallback = _prepareRemoveCallback(removeFunction, name, sync, removeCallbackSync);
+  if (!opts.keep) _removeObjects.unshift(removeCallbackSync);
+
+  return sync ? removeCallbackSync : removeCallback;
+}
+
+/**
+ * Creates a guarded function wrapping the removeFunction call.
+ *
+ * The cleanup callback is save to be called multiple times.
+ * Subsequent invocations will be ignored.
+ *
+ * @param {Function} removeFunction
+ * @param {string} fileOrDirName
+ * @param {boolean} sync
+ * @param {cleanupCallbackSync?} cleanupCallbackSync
+ * @returns {cleanupCallback | cleanupCallbackSync}
+ * @private
+ */
+function _prepareRemoveCallback(removeFunction, fileOrDirName, sync, cleanupCallbackSync) {
+  let called = false;
+
+  // if sync is true, the next parameter will be ignored
+  return function _cleanupCallback(next) {
+
+    /* istanbul ignore else */
+    if (!called) {
+      // remove cleanupCallback from cache
+      const toRemove = cleanupCallbackSync || _cleanupCallback;
+      const index = _removeObjects.indexOf(toRemove);
+      /* istanbul ignore else */
+      if (index >= 0) _removeObjects.splice(index, 1);
+
+      called = true;
+      if (sync || removeFunction === FN_RMDIR_SYNC || removeFunction === FN_RIMRAF_SYNC) {
+        return removeFunction(fileOrDirName);
+      } else {
+        return removeFunction(fileOrDirName, next || function() {});
+      }
+    }
+  };
+}
+
+/**
+ * The garbage collector.
+ *
+ * @private
+ */
+function _garbageCollector() {
+  /* istanbul ignore else */
+  if (!_gracefulCleanup) return;
+
+  // the function being called removes itself from _removeObjects,
+  // loop until _removeObjects is empty
+  while (_removeObjects.length) {
+    try {
+      _removeObjects[0]();
+    } catch (e) {
+      // already removed?
+    }
+  }
+}
+
+/**
+ * Random name generator based on crypto.
+ * Adapted from http://blog.tompawlak.org/how-to-generate-random-values-nodejs-javascript
+ *
+ * @param {number} howMany
+ * @returns {string} the generated random name
+ * @private
+ */
+function _randomChars(howMany) {
+  let
+    value = [],
+    rnd = null;
+
+  // make sure that we do not fail because we ran out of entropy
+  try {
+    rnd = crypto.randomBytes(howMany);
+  } catch (e) {
+    rnd = crypto.pseudoRandomBytes(howMany);
+  }
+
+  for (var i = 0; i < howMany; i++) {
+    value.push(RANDOM_CHARS[rnd[i] % RANDOM_CHARS.length]);
+  }
+
+  return value.join('');
+}
+
+/**
+ * Helper which determines whether a string s is blank, that is undefined, or empty or null.
+ *
+ * @private
+ * @param {string} s
+ * @returns {Boolean} true whether the string s is blank, false otherwise
+ */
+function _isBlank(s) {
+  return s === null || _isUndefined(s) || !s.trim();
+}
+
+/**
+ * Checks whether the `obj` parameter is defined or not.
+ *
+ * @param {Object} obj
+ * @returns {boolean} true if the object is undefined
+ * @private
+ */
+function _isUndefined(obj) {
+  return typeof obj === 'undefined';
+}
+
+/**
+ * Parses the function arguments.
+ *
+ * This function helps to have optional arguments.
+ *
+ * @param {(Options|null|undefined|Function)} options
+ * @param {?Function} callback
+ * @returns {Array} parsed arguments
+ * @private
+ */
+function _parseArguments(options, callback) {
+  /* istanbul ignore else */
+  if (typeof options === 'function') {
+    return [{}, options];
+  }
+
+  /* istanbul ignore else */
+  if (_isUndefined(options)) {
+    return [{}, callback];
+  }
+
+  // copy options so we do not leak the changes we make internally
+  const actualOptions = {};
+  for (const key of Object.getOwnPropertyNames(options)) {
+    actualOptions[key] = options[key];
+  }
+
+  return [actualOptions, callback];
+}
+
+/**
+ * Generates a new temporary name.
+ *
+ * @param {Object} opts
+ * @returns {string} the new random name according to opts
+ * @private
+ */
+function _generateTmpName(opts) {
+
+  const tmpDir = opts.tmpdir;
+
+  /* istanbul ignore else */
+  if (!_isUndefined(opts.name))
+    return path.join(tmpDir, opts.dir, opts.name);
+
+  /* istanbul ignore else */
+  if (!_isUndefined(opts.template))
+    return path.join(tmpDir, opts.dir, opts.template).replace(TEMPLATE_PATTERN, _randomChars(6));
+
+  // prefix and postfix
+  const name = [
+    opts.prefix ? opts.prefix : 'tmp',
+    '-',
+    process.pid,
+    '-',
+    _randomChars(12),
+    opts.postfix ? '-' + opts.postfix : ''
+  ].join('');
+
+  return path.join(tmpDir, opts.dir, name);
+}
+
+/**
+ * Asserts whether the specified options are valid, also sanitizes options and provides sane defaults for missing
+ * options.
+ *
+ * @param {Options} options
+ * @private
+ */
+function _assertAndSanitizeOptions(options) {
+
+  options.tmpdir = _getTmpDir(options);
+
+  const tmpDir = options.tmpdir;
+
+  /* istanbul ignore else */
+  if (!_isUndefined(options.name))
+    _assertIsRelative(options.name, 'name', tmpDir);
+  /* istanbul ignore else */
+  if (!_isUndefined(options.dir))
+    _assertIsRelative(options.dir, 'dir', tmpDir);
+  /* istanbul ignore else */
+  if (!_isUndefined(options.template)) {
+    _assertIsRelative(options.template, 'template', tmpDir);
+    if (!options.template.match(TEMPLATE_PATTERN))
+      throw new Error(`Invalid template, found "${options.template}".`);
+  }
+  /* istanbul ignore else */
+  if (!_isUndefined(options.tries) && isNaN(options.tries) || options.tries < 0)
+    throw new Error(`Invalid tries, found "${options.tries}".`);
+
+  // if a name was specified we will try once
+  options.tries = _isUndefined(options.name) ? options.tries || DEFAULT_TRIES : 1;
+  options.keep = !!options.keep;
+  options.detachDescriptor = !!options.detachDescriptor;
+  options.discardDescriptor = !!options.discardDescriptor;
+  options.unsafeCleanup = !!options.unsafeCleanup;
+
+  // sanitize dir, also keep (multiple) blanks if the user, purportedly sane, requests us to
+  options.dir = _isUndefined(options.dir) ? '' : path.relative(tmpDir, _resolvePath(options.dir, tmpDir));
+  options.template = _isUndefined(options.template) ? undefined : path.relative(tmpDir, _resolvePath(options.template, tmpDir));
+  // sanitize further if template is relative to options.dir
+  options.template = _isBlank(options.template) ? undefined : path.relative(options.dir, options.template);
+
+  // for completeness' sake only, also keep (multiple) blanks if the user, purportedly sane, requests us to
+  options.name = _isUndefined(options.name) ? undefined : options.name;
+  options.prefix = _isUndefined(options.prefix) ? '' : options.prefix;
+  options.postfix = _isUndefined(options.postfix) ? '' : options.postfix;
+}
+
+/**
+ * Resolve the specified path name in respect to tmpDir.
+ *
+ * The specified name might include relative path components, e.g. ../
+ * so we need to resolve in order to be sure that is is located inside tmpDir
+ *
+ * @param name
+ * @param tmpDir
+ * @returns {string}
+ * @private
+ */
+function _resolvePath(name, tmpDir) {
+  if (name.startsWith(tmpDir)) {
+    return path.resolve(name);
+  } else {
+    return path.resolve(path.join(tmpDir, name));
+  }
+}
+
+/**
+ * Asserts whether specified name is relative to the specified tmpDir.
+ *
+ * @param {string} name
+ * @param {string} option
+ * @param {string} tmpDir
+ * @throws {Error}
+ * @private
+ */
+function _assertIsRelative(name, option, tmpDir) {
+  if (option === 'name') {
+    // assert that name is not absolute and does not contain a path
+    if (path.isAbsolute(name))
+      throw new Error(`${option} option must not contain an absolute path, found "${name}".`);
+    // must not fail on valid .<name> or ..<name> or similar such constructs
+    let basename = path.basename(name);
+    if (basename === '..' || basename === '.' || basename !== name)
+      throw new Error(`${option} option must not contain a path, found "${name}".`);
+  }
+  else { // if (option === 'dir' || option === 'template') {
+    // assert that dir or template are relative to tmpDir
+    if (path.isAbsolute(name) && !name.startsWith(tmpDir)) {
+      throw new Error(`${option} option must be relative to "${tmpDir}", found "${name}".`);
+    }
+    let resolvedPath = _resolvePath(name, tmpDir);
+    if (!resolvedPath.startsWith(tmpDir))
+      throw new Error(`${option} option must be relative to "${tmpDir}", found "${resolvedPath}".`);
+  }
+}
+
+/**
+ * Helper for testing against EBADF to compensate changes made to Node 7.x under Windows.
+ *
+ * @private
+ */
+function _isEBADF(error) {
+  return _isExpectedError(error, -EBADF, 'EBADF');
+}
+
+/**
+ * Helper for testing against ENOENT to compensate changes made to Node 7.x under Windows.
+ *
+ * @private
+ */
+function _isENOENT(error) {
+  return _isExpectedError(error, -ENOENT, 'ENOENT');
+}
+
+/**
+ * Helper to determine whether the expected error code matches the actual code and errno,
+ * which will differ between the supported node versions.
+ *
+ * - Node >= 7.0:
+ *   error.code {string}
+ *   error.errno {number} any numerical value will be negated
+ *
+ * CAVEAT
+ *
+ * On windows, the errno for EBADF is -4083 but os.constants.errno.EBADF is different and we must assume that ENOENT
+ * is no different here.
+ *
+ * @param {SystemError} error
+ * @param {number} errno
+ * @param {string} code
+ * @private
+ */
+function _isExpectedError(error, errno, code) {
+  return IS_WIN32 ? error.code === code : error.code === code && error.errno === errno;
+}
+
+/**
+ * Sets the graceful cleanup.
+ *
+ * If graceful cleanup is set, tmp will remove all controlled temporary objects on process exit, otherwise the
+ * temporary objects will remain in place, waiting to be cleaned up on system restart or otherwise scheduled temporary
+ * object removals.
+ */
+function setGracefulCleanup() {
+  _gracefulCleanup = true;
+}
+
+/**
+ * Returns the currently configured tmp dir from os.tmpdir().
+ *
+ * @private
+ * @param {?Options} options
+ * @returns {string} the currently configured tmp dir
+ */
+function _getTmpDir(options) {
+  return path.resolve(options && options.tmpdir || os.tmpdir());
+}
+
+// Install process exit listener
+process.addListener(EXIT, _garbageCollector);
+
+/**
+ * Configuration options.
+ *
+ * @typedef {Object} Options
+ * @property {?boolean} keep the temporary object (file or dir) will not be garbage collected
+ * @property {?number} tries the number of tries before give up the name generation
+ * @property (?int) mode the access mode, defaults are 0o700 for directories and 0o600 for files
+ * @property {?string} template the "mkstemp" like filename template
+ * @property {?string} name fixed name relative to tmpdir or the specified dir option
+ * @property {?string} dir tmp directory relative to the root tmp directory in use
+ * @property {?string} prefix prefix for the generated name
+ * @property {?string} postfix postfix for the generated name
+ * @property {?string} tmpdir the root tmp directory which overrides the os tmpdir
+ * @property {?boolean} unsafeCleanup recursively removes the created temporary directory, even when it's not empty
+ * @property {?boolean} detachDescriptor detaches the file descriptor, caller is responsible for closing the file, tmp will no longer try closing the file during garbage collection
+ * @property {?boolean} discardDescriptor discards the file descriptor (closes file, fd is -1), tmp will no longer try closing the file during garbage collection
+ */
+
+/**
+ * @typedef {Object} FileSyncObject
+ * @property {string} name the name of the file
+ * @property {string} fd the file descriptor or -1 if the fd has been discarded
+ * @property {fileCallback} removeCallback the callback function to remove the file
+ */
+
+/**
+ * @typedef {Object} DirSyncObject
+ * @property {string} name the name of the directory
+ * @property {fileCallback} removeCallback the callback function to remove the directory
+ */
+
+/**
+ * @callback tmpNameCallback
+ * @param {?Error} err the error object if anything goes wrong
+ * @param {string} name the temporary file name
+ */
+
+/**
+ * @callback fileCallback
+ * @param {?Error} err the error object if anything goes wrong
+ * @param {string} name the temporary file name
+ * @param {number} fd the file descriptor or -1 if the fd had been discarded
+ * @param {cleanupCallback} fn the cleanup callback function
+ */
+
+/**
+ * @callback fileCallbackSync
+ * @param {?Error} err the error object if anything goes wrong
+ * @param {string} name the temporary file name
+ * @param {number} fd the file descriptor or -1 if the fd had been discarded
+ * @param {cleanupCallbackSync} fn the cleanup callback function
+ */
+
+/**
+ * @callback dirCallback
+ * @param {?Error} err the error object if anything goes wrong
+ * @param {string} name the temporary file name
+ * @param {cleanupCallback} fn the cleanup callback function
+ */
+
+/**
+ * @callback dirCallbackSync
+ * @param {?Error} err the error object if anything goes wrong
+ * @param {string} name the temporary file name
+ * @param {cleanupCallbackSync} fn the cleanup callback function
+ */
+
+/**
+ * Removes the temporary created file or directory.
+ *
+ * @callback cleanupCallback
+ * @param {simpleCallback} [next] function to call whenever the tmp object needs to be removed
+ */
+
+/**
+ * Removes the temporary created file or directory.
+ *
+ * @callback cleanupCallbackSync
+ */
+
+/**
+ * Callback function for function composition.
+ * @see {@link https://github.com/raszi/node-tmp/issues/57|raszi/node-tmp#57}
+ *
+ * @callback simpleCallback
+ */
+
+// exporting all the needed methods
+
+// evaluate _getTmpDir() lazily, mainly for simplifying testing but it also will
+// allow users to reconfigure the temporary directory
+Object.defineProperty(module.exports, "tmpdir", ({
+  enumerable: true,
+  configurable: false,
+  get: function () {
+    return _getTmpDir();
+  }
+}));
+
+module.exports.dir = dir;
+module.exports.dirSync = dirSync;
+
+module.exports.file = file;
+module.exports.fileSync = fileSync;
+
+module.exports.tmpName = tmpName;
+module.exports.tmpNameSync = tmpNameSync;
+
+module.exports.setGracefulCleanup = setGracefulCleanup;
 
 
 /***/ }),
@@ -54595,6 +57560,14 @@ module.exports = require("buffer");
 
 /***/ }),
 
+/***/ 32081:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("child_process");
+
+/***/ }),
+
 /***/ 96206:
 /***/ ((module) => {
 
@@ -54744,6 +57717,14 @@ module.exports = require("stream/web");
 
 "use strict";
 module.exports = require("string_decoder");
+
+/***/ }),
+
+/***/ 39512:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("timers");
 
 /***/ }),
 
@@ -66805,9 +69786,17 @@ var __webpack_exports__ = {};
 var exports = __webpack_exports__;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const create_cluster_1 = __nccwpck_require__(32139);
-const remove_cluster_1 = __nccwpck_require__(40031);
+const create_cluster_1 = __nccwpck_require__(4468);
+const create_customer_1 = __nccwpck_require__(41055);
+const create_release_1 = __nccwpck_require__(53440);
+const helm_install_1 = __nccwpck_require__(42185);
+const kots_install_1 = __nccwpck_require__(37449);
+const remove_cluster_1 = __nccwpck_require__(22852);
 exports.actionCreateCluster = create_cluster_1.actionCreateCluster;
+exports.actionCreateCustomer = create_customer_1.actionCreateCustomer;
+exports.actionCreateRelease = create_release_1.actionCreateRelease;
+exports.actionHelmInstall = helm_install_1.actionHelmInstall;
+exports.actionKotsInstall = kots_install_1.actionKotsInstall;
 exports.actionRemoveCluster = remove_cluster_1.actionRemoveCluster;
 //# sourceMappingURL=index.js.map
 })();

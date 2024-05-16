@@ -2,7 +2,6 @@ import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import * as httpClient from '@actions/http-client';
 import * as fs from 'fs';
-import * as url from 'url';
 import * as tmpPromise from 'tmp-promise';
 import * as path from 'path';
 import * as randomstring from 'randomstring';

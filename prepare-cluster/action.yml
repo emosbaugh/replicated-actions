@@ -153,22 +153,23 @@ runs:
     shell: bash
     run: node ${{ github.action_path }}/helm-install.js
     env:
-      kubeconfig: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
-      helm-path: "helm"
-      registry-username: ${{ github.ref_name }}@example.com
-      registry-password: ${{ steps.create-customer.outputs.license-id }}
-      chart: oci://registry.replicated.com/${{ inputs.app-slug }}/release__${{ steps.create-release.outputs.release-sequence }}/${{ inputs.helm-chart-name }}
-      name: ${{ inputs.app-slug }}
-      namespace: 'default'
-      values: ${{ inputs.helm-values }}
-      run-preflights: ${{ inputs.helm-run-preflights }}
-  # - name: Deploy the app with KOTS
-  #   if: ${{ inputs.yaml-dir != '' }}
-  #   uses: replicatedhq/compatibility-actions/kots-install@${{ env.action_ref }} 
-  #   with:
-  #     kubeconfig: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
-  #     INPUT_APP-SLUG: ${{ inputs.app-slug }}/test-channel
-  #     license-file: ${{ steps.create-customer.outputs.license-file }}
-  #     app-version-label: release__${{ steps.create-release.outputs.release-sequence }}
-  #     config-values: ${{ inputs.kots-config-values }}
-  #     wait-duration: ${{ inputs.kots-wait-duration }}
+      INPUT_KUBECONFIG: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
+      INPUT_HELM-PATH: "helm"
+      INPUT_REGISTRY-USERNAME: ${{ github.ref_name }}@example.com
+      INPUT_REGISTRY-PASSWORD: ${{ steps.create-customer.outputs.license-id }}
+      INPUT_CHART: oci://registry.replicated.com/${{ inputs.app-slug }}/release__${{ steps.create-release.outputs.release-sequence }}/${{ inputs.helm-chart-name }}
+      INPUT_NAME: ${{ inputs.app-slug }}
+      INPUT_NAMESPACE: 'default'
+      INPUT_VALUES: ${{ inputs.helm-values }}
+      INPUT_RUN-PREFLIGHTS: ${{ inputs.helm-run-preflights }}
+  - name: Deploy the app with KOTS
+    if: ${{ inputs.yaml-dir != '' }}
+    shell: bash
+    run: node ${{ github.action_path }}/kots-install.js
+    env:
+      INPUT_KUBECONFIG: ${{ steps.create-cluster.outputs.cluster-kubeconfig }}
+      INPUT_APP-SLUG: ${{ inputs.app-slug }}/${{ steps.create-release.outputs.channel-slug }}
+      INPUT_LICENSE-FILE: ${{ steps.create-customer.outputs.license-file }}
+      INPUT_APP-VERSION-LABEL: release__${{ steps.create-release.outputs.release-sequence }}
+      INPUT_CONFIG-VALUES: ${{ inputs.kots-config-values }}
+      INPUT_WAIT-DURATION: ${{ inputs.kots-wait-duration }}
