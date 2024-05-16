@@ -106,14 +106,16 @@ outputs:
 runs:
   using: "composite"
   steps:
-  # - name: 'Create Release'
-  #   id: 'create-release'
-  #   uses: replicatedhq/compatibility-actions/create-release@${{ env.action_ref }}
-  #   with:
-  #     app-slug: ${{ inputs.app-slug }}
-  #     api-token: ${{ inputs.api-token }}
-  #     yaml-dir: ${{ inputs.yaml-dir }}
-  #     chart: ${{ inputs.chart }}
+  - name: 'Create Release'
+    id: 'create-release'
+    shell: bash
+    run: |
+      node ${{ github.action_path }}/create-release.js
+    with:
+      INPUT_APP-SLUG: ${{ inputs.app-slug }}
+      INPUT_API-TOKEN: ${{ inputs.api-token }}
+      INPUT_YAML-DIR: ${{ inputs.yaml-dir }}
+      INPUT_CHART: ${{ inputs.chart }}
   # - name: 'Create Customer'
   #   id: 'create-customer'
   #   uses: replicatedhq/compatibility-actions/create-customer@${{ env.action_ref }}

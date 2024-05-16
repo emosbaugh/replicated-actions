@@ -6,7 +6,7 @@ export async function actionRemoveCluster() {
   try {
     const apiToken = core.getInput('api-token')
     const clusterId = core.getInput('cluster-id');
-    core.info(`Removing cluster ${clusterId}...`);
+    core.debug(`Removing cluster ${clusterId}...`);
     const apiEndpoint = core.getInput('replicated-api-endpoint')
     
     const apiClient = new VendorPortalApi();

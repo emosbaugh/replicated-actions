@@ -1,19 +1,14 @@
-name: test - prepare-cluster
+name: test - create-release
 
 on:
   pull_request:
     branches:
       - main
     paths:
-      - prepare-cluster/**
       - create-release/**
-      - create-customer/**
-      - create-cluster/**
-      - helm-install/**
-      - kots-install/**
 
 concurrency:
-  group: test-prepare-cluster-${{ github.head_ref }}
+  group: test-create-release-${{ github.head_ref }}
   cancel-in-progress: true
 
 jobs:
@@ -32,28 +27,18 @@ jobs:
             **/package-lock.json
 
       - name: build
-        run: make package-prepare-cluster
+        run: make package-create-release
 
       - name: pull helm chart
         run: |
           helm pull oci://registry-1.docker.io/bitnamicharts/wordpress --version ${{ env.WORDPRESS_CHART_VERSION }}
 
-      - name: test prepare-cluster
-        id: prepare-cluster
-        uses: ./prepare-cluster
+      - name: test create-release
+        id: create-release
+        uses: ./create-release
         with:
           api-token: ${{ secrets.REPLICATED_API_TOKEN }}
           app-slug: replicated-actions-ci # from the Replicated QA team
           chart: wordpress-${{ env.WORDPRESS_CHART_VERSION }}.tgz
           helm-chart-name: wordpress
           helm-run-preflights: false
-          kubernetes-distribution: kind
-
-      - name: remove cluster
-        id: remove-cluster
-        if: always()
-        uses: replicatedhq/compatibility-actions/remove-cluster@v1
-        continue-on-error: true # It could be that the cluster is already removed
-        with:
-          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
-          cluster-id: ${{ steps.prepare-cluster.outputs.cluster-id }}

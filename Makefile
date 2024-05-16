@@ -7,12 +7,12 @@ package-all: package-archive-channel package-archive-customer package-create-clu
 
 .PHONY: package-main
 package-main:
-	rm -rf ./build ./dist ./node_modules
-	npm install && npm run build && npm run package
+	rm -rf ./build ./dist
+	npm i && npm run build && npm run package
 
 .PHONY: package-prepare-cluster
 package-prepare-cluster: package-main
-	rm -rf ./prepare-cluster/build ./prepare-cluster/dist ./prepare-cluster/node_modules
+	rm -rf ./prepare-cluster/dist
 	cp -r dist prepare-cluster/
 
 .PHONY: package-archive-channel
@@ -27,7 +27,7 @@ package-archive-customer:
 
 .PHONY: package-create-cluster
 package-create-cluster: package-main
-	rm -rf ./create-cluster/build ./create-cluster/dist ./create-cluster/node_modules
+	rm -rf ./create-cluster/dist
 	cp -r dist create-cluster/
 
 .PHONY: package-create-object-store
@@ -51,9 +51,9 @@ package-create-customer:
 	cd ./create-customer && npm install && npm run build && npm run package
 
 .PHONY: package-create-release
-package-create-release:
-	rm -rf ./create-release/build ./create-release/dist ./create-release/node_modules
-	cd ./create-release && npm install && npm run build && npm run package
+package-create-release: package-main
+	rm -rf ./create-release/dist
+	cp -r dist create-release/
 
 .PHONY: package-helm-install
 package-helm-install:
@@ -72,7 +72,7 @@ package-promote-release:
 
 .PHONY: package-remove-cluster
 package-remove-cluster: package-main
-	rm -rf ./remove-cluster/build ./remove-cluster/dist ./remove-cluster/node_modules
+	rm -rf ./remove-cluster/dist
 	cp -r dist remove-cluster/
 
 .PHONY: package-get-customer-instances

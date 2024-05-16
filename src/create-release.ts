@@ -1,8 +1,7 @@
 import * as core from '@actions/core';
 import { VendorPortalApi, Channel, Release, createChannel, getChannelDetails, createRelease, createReleaseFromChart, promoteRelease  } from 'replicated-lib';
 
-
-async function run() {
+export async function actionCreateRelease() {
   try {
     const appSlug = core.getInput('app-slug')
     const apiToken = core.getInput('api-token')
@@ -60,6 +59,3 @@ async function run() {
     core.setFailed(error.message);
   }
 }
-
-
-run()

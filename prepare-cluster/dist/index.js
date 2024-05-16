@@ -109,6 +109,82 @@ function processNodeGroups(nodeGroups) {
 
 /***/ }),
 
+/***/ 9786:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.actionCreateRelease = void 0;
+const core = __nccwpck_require__(42186);
+const replicated_lib_1 = __nccwpck_require__(34409);
+function actionCreateRelease() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const appSlug = core.getInput('app-slug');
+            const apiToken = core.getInput('api-token');
+            const chart = core.getInput('chart');
+            const yamlDir = core.getInput('yaml-dir');
+            const promoteChannel = core.getInput('promote-channel');
+            const releaseVersion = core.getInput('version');
+            const apiEndpoint = core.getInput('replicated-api-endpoint');
+            const apiClient = new replicated_lib_1.VendorPortalApi();
+            apiClient.apiToken = apiToken;
+            if (apiEndpoint) {
+                apiClient.endpoint = apiEndpoint;
+            }
+            if (chart && yamlDir) {
+                core.setFailed('You must provide either a chart or a YAML directory, not both');
+            }
+            if (chart === "" && yamlDir === "") {
+                core.setFailed('You must provide either a chart or a YAML directory');
+            }
+            let release;
+            if (chart) {
+                release = yield (0, replicated_lib_1.createReleaseFromChart)(apiClient, appSlug, chart);
+            }
+            else {
+                release = yield (0, replicated_lib_1.createRelease)(apiClient, appSlug, yamlDir);
+            }
+            // If promote channel is specified, promote release
+            if (promoteChannel) {
+                const channel = (0, replicated_lib_1.getChannelDetails)(apiClient, appSlug, { name: promoteChannel });
+                let resolvedChannel;
+                yield channel.then((channel) => {
+                    console.log(channel.name);
+                    resolvedChannel = channel;
+                }, (reason) => {
+                    if (reason.channel === null) {
+                        console.error(reason.reason);
+                    }
+                });
+                if (!resolvedChannel) {
+                    resolvedChannel = yield (0, replicated_lib_1.createChannel)(apiClient, appSlug, promoteChannel);
+                }
+                yield (0, replicated_lib_1.promoteRelease)(apiClient, appSlug, resolvedChannel.id, +release.sequence, releaseVersion);
+                core.setOutput('channel-slug', resolvedChannel.slug);
+            }
+            core.setOutput('release-sequence', release.sequence);
+        }
+        catch (error) {
+            core.setFailed(error.message);
+        }
+    });
+}
+exports.actionCreateRelease = actionCreateRelease;
+//# sourceMappingURL=create-release.js.map
+
+/***/ }),
+
 /***/ 40031:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -132,7 +208,7 @@ function actionRemoveCluster() {
         try {
             const apiToken = core.getInput('api-token');
             const clusterId = core.getInput('cluster-id');
-            core.info(`Removing cluster ${clusterId}...`);
+            core.debug(`Removing cluster ${clusterId}...`);
             const apiEndpoint = core.getInput('replicated-api-endpoint');
             const apiClient = new replicated_lib_1.VendorPortalApi();
             apiClient.apiToken = apiToken;
@@ -66806,8 +66882,10 @@ var exports = __webpack_exports__;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const create_cluster_1 = __nccwpck_require__(32139);
+const create_release_1 = __nccwpck_require__(9786);
 const remove_cluster_1 = __nccwpck_require__(40031);
 exports.actionCreateCluster = create_cluster_1.actionCreateCluster;
+exports.actionCreateRelease = create_release_1.actionCreateRelease;
 exports.actionRemoveCluster = remove_cluster_1.actionRemoveCluster;
 //# sourceMappingURL=index.js.map
 })();
