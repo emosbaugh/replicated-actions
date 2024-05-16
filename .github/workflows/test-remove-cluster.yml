@@ -27,24 +27,24 @@ jobs:
       - name: build
         run: make package-remove-cluster
 
-      - name: create cluster
-        id: create-cluster
-        uses: replicatedhq/compatibility-actions/create-cluster@v1
-        with:
-          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
-          kubernetes-distribution: kind
-          timeout-minutes: 5
+    #   - name: create cluster
+    #     id: create-cluster
+    #     uses: replicatedhq/compatibility-actions/create-cluster@v1
+    #     with:
+    #       api-token: ${{ secrets.REPLICATED_API_TOKEN }}
+    #       kubernetes-distribution: kind
+    #       timeout-minutes: 5
 
       - name: test remove-cluster
         uses: ./remove-cluster
         with:
           api-token: ${{ secrets.REPLICATED_API_TOKEN }}
-          cluster-id: ${{ steps.create-cluster.outputs.cluster-id }}
+          cluster-id: blah # ${{ steps.create-cluster.outputs.cluster-id }}
 
-      - name: remove cluster
-        if: always()
-        uses: replicatedhq/compatibility-actions/remove-cluster@v1
-        continue-on-error: true # It could be that the cluster is already removed
-        with:
-          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
-          cluster-id: ${{ steps.create-cluster.outputs.cluster-id }}
+    #   - name: remove cluster
+    #     if: always()
+    #     uses: replicatedhq/compatibility-actions/remove-cluster@v1
+    #     continue-on-error: true # It could be that the cluster is already removed
+    #     with:
+    #       api-token: ${{ secrets.REPLICATED_API_TOKEN }}
+    #       cluster-id: ${{ steps.create-cluster.outputs.cluster-id }}
