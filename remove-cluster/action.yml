@@ -15,7 +15,7 @@ runs:
       id: "remove-cluster"
       shell: bash
       run: |
-        node index.js remove-cluster
+        node ${{ github.action_path }}/index.js remove-cluster
       env:
         INPUT_api-token: "${{ inputs.api-token }}"
         INPUT_cluster-id: "${{ inputs.cluster-id }}"
