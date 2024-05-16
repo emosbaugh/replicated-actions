@@ -1,9 +1,13 @@
-name: CI
+name: ci
 
 on:
   pull_request:
     branches:
       - main
+
+concurrency:
+  group: ci-${{ github.head_ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -18,11 +22,8 @@ jobs:
           cache-dependency-path: |
             **/package-lock.json
 
-      - name: package
-        run: make package-all
-
-      - name: readme
-        run: make readme-all
+      - name: build
+        run: make
 
       - name: fail if files changed
         run: |

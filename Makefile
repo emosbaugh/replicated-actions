@@ -1,3 +1,8 @@
+SHELL := /bin/bash
+
+.PHONY: all
+all: package-all readme-all
+
 .PHONY: package-all
 package-all: package-archive-channel package-archive-customer package-create-cluster package-create-object-store \
 			 package-create-postgres package-expose-port package-create-customer package-create-release \
