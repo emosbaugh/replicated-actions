@@ -127,6 +127,7 @@ runs:
       INPUT_LICENSE-TYPE: "test"
       INPUT_ENTITLEMENTS: ${{ inputs.customer-entitlements }}
       INPUT_CHANNEL-SLUG: ${{ steps.create-release.outputs.channel-slug }}
+      INPUT_IS-KOTS-INSTALL-ENABLED: "false"
   - name: Create Cluster
     id: create-cluster
     shell: bash
